@@ -3,32 +3,28 @@
 from pathlib import Path
 import os
 from collections import OrderedDict
-import pandas as pd
 
+import pandas as pd
 import streamlit as st
 import chromadb
 from chromadb.config import Settings
+from chromadb.utils import embedding_functions
 from dotenv import load_dotenv
 from sentence_transformers import SentenceTransformer
 import google.generativeai as genai
 
 
-# =========================================================
-# Base configuration
-# =========================================================
 BASE_DIR = Path(__file__).resolve().parent
 INDEX_DIR = BASE_DIR / "data" / "index"
-ACTIVE_CHROMA_PATH_FILE = INDEX_DIR / "active_chroma_path.txt"
+CHUNKS_CSV = INDEX_DIR / "chunks.csv"
 
 COLLECTION_NAME = "cgspace_documents"
 EMBEDDING_MODEL = "all-MiniLM-L6-v2"
+EMBEDDING_MODEL_CHROMA = "sentence-transformers/all-MiniLM-L6-v2"
 MODEL_NAME = "models/gemini-flash-lite-latest"
 TOP_K_DEFAULT = 8
 
 
-# =========================================================
-# Page config
-# =========================================================
 st.set_page_config(
     page_title="Research Assistant Agent",
     page_icon="🌿",
@@ -36,9 +32,6 @@ st.set_page_config(
 )
 
 
-# =========================================================
-# Styling
-# =========================================================
 st.markdown(
     """
     <style>
@@ -99,16 +92,6 @@ st.markdown(
         opacity: 0.9;
     }
 
-    .note-box {
-        background: #FFFFFF;
-        border: 1px solid #DCEBE4;
-        border-radius: 14px;
-        padding: 1rem 1.1rem;
-        color: #31483B;
-        font-size: 0.93rem;
-        margin-bottom: 1.1rem;
-    }
-
     [data-testid="stSidebar"] {
         background: #EFF8F2 !important;
         color: #17231D !important;
@@ -146,7 +129,6 @@ st.markdown(
         display:flex;
         align-items:center;
         justify-content:center;
-        letter-spacing:0.02rem;
     }
 
     .fake-logo-right {
@@ -214,9 +196,6 @@ st.markdown(
 )
 
 
-# =========================================================
-# Environment and model loading
-# =========================================================
 load_dotenv(BASE_DIR / ".env")
 
 
@@ -230,28 +209,9 @@ def get_google_api_key():
     return key
 
 
-def load_chroma_path():
-    if ACTIVE_CHROMA_PATH_FILE.exists():
-        path = ACTIVE_CHROMA_PATH_FILE.read_text(encoding="utf-8").strip()
-        if path:
-            return path
-    return str(INDEX_DIR / "chroma")
-
-
 @st.cache_resource
 def load_embedding_model():
     return SentenceTransformer(EMBEDDING_MODEL)
-
-
-@st.cache_resource
-def load_chroma_collection():
-    chroma_path = load_chroma_path()
-    client = chromadb.PersistentClient(
-        path=chroma_path,
-        settings=Settings(anonymized_telemetry=False)
-    )
-    collection = client.get_collection(COLLECTION_NAME)
-    return collection
 
 
 @st.cache_resource
@@ -263,76 +223,87 @@ def load_gemini_model():
     return genai.GenerativeModel(MODEL_NAME)
 
 
-# =========================================================
-# RAG functions
-# =========================================================
+def clean_metadata_value(value):
+    if pd.isna(value):
+        return ""
+    return str(value)
+
+
 @st.cache_resource
 def load_chroma_collection():
     chroma_path = str(INDEX_DIR / "chroma")
-    chunks_csv = INDEX_DIR / "chunks.csv"
 
-    embedding_function = None
-
-    if not Path(chroma_path).exists():
-        if not chunks_csv.exists():
-            raise FileNotFoundError("No existe data/index/chunks.csv para reconstruir Chroma.")
-
-        st.info("Building ChromaDB from chunks.csv. This may take a few minutes on first launch...")
-
-        import chromadb
-        from chromadb.utils import embedding_functions
-
-        embedding_function = embedding_functions.SentenceTransformerEmbeddingFunction(
-            model_name=f"sentence-transformers/{EMBEDDING_MODEL}"
-        )
-
-        client = chromadb.PersistentClient(
-            path=chroma_path,
-            settings=Settings(anonymized_telemetry=False)
-        )
-
-        collection = client.get_or_create_collection(
-            name=COLLECTION_NAME,
-            embedding_function=embedding_function
-        )
-
-        df = pd.read_csv(chunks_csv)
-        df["chunk_text"] = df["chunk_text"].fillna("").astype(str)
-        df = df[df["chunk_text"].str.strip() != ""].copy()
-
-        ids = []
-        documents = []
-        metadatas = []
-
-        for _, row in df.iterrows():
-            ids.append(str(row["chunk_id"]))
-            documents.append(str(row["chunk_text"]))
-            metadatas.append({
-                "title": str(row.get("title", "")),
-                "document": str(row.get("document", "")),
-                "page": int(row.get("page", 0)),
-                "item_url": str(row.get("item_url", "")),
-                "pdf_url": str(row.get("pdf_url", "")),
-                "pdf_name": str(row.get("pdf_name", "")),
-            })
-
-        batch_size = 100
-        for start in range(0, len(ids), batch_size):
-            end = min(start + batch_size, len(ids))
-            collection.add(
-                ids=ids[start:end],
-                documents=documents[start:end],
-                metadatas=metadatas[start:end],
-            )
-
-        return collection
+    embedding_function = embedding_functions.SentenceTransformerEmbeddingFunction(
+        model_name=EMBEDDING_MODEL_CHROMA
+    )
 
     client = chromadb.PersistentClient(
         path=chroma_path,
         settings=Settings(anonymized_telemetry=False)
     )
 
-    return client.get_collection(COLLECTION_NAME)
+    existing = [c.name for c in client.list_collections()]
+
+    if COLLECTION_NAME in existing:
+        return client.get_collection(
+            name=COLLECTION_NAME,
+            embedding_function=embedding_function
+        )
+
+    if not CHUNKS_CSV.exists():
+        raise FileNotFoundError("No existe data/index/chunks.csv para construir Chroma.")
+
+    st.info("Building ChromaDB from chunks.csv. This may take a few minutes on first launch...")
+
+    collection = client.get_or_create_collection(
+        name=COLLECTION_NAME,
+        embedding_function=embedding_function
+    )
+
+    df = pd.read_csv(CHUNKS_CSV)
+
+    required_cols = [
+        "chunk_id", "chunk_text", "title", "document",
+        "page", "item_url", "pdf_url", "pdf_name"
+    ]
+
+    missing = [c for c in required_cols if c not in df.columns]
+    if missing:
+        raise ValueError(f"Faltan columnas en chunks.csv: {missing}")
+
+    df["chunk_text"] = df["chunk_text"].fillna("").astype(str)
+    df = df[df["chunk_text"].str.strip() != ""].copy()
+
+    ids, documents, metadatas = [], [], []
+
+    for _, row in df.iterrows():
+        ids.append(str(row["chunk_id"]))
+        documents.append(str(row["chunk_text"]))
+        metadatas.append({
+            "title": clean_metadata_value(row.get("title", "")),
+            "document": clean_metadata_value(row.get("document", "")),
+            "page": int(row.get("page", 0)),
+            "item_url": clean_metadata_value(row.get("item_url", "")),
+            "pdf_url": clean_metadata_value(row.get("pdf_url", "")),
+            "pdf_name": clean_metadata_value(row.get("pdf_name", "")),
+        })
+
+    batch_size = 100
+
+    for start in range(0, len(ids), batch_size):
+        end = min(start + batch_size, len(ids))
+        collection.add(
+            ids=ids[start:end],
+            documents=documents[start:end],
+            metadatas=metadatas[start:end],
+        )
+
+    return collection
+
+
+def retrieve_context(question: str, top_k: int):
+    embedding_model = load_embedding_model()
+    collection = load_chroma_collection()
 
     query_embedding = embedding_model.encode(
         question,
@@ -440,18 +411,10 @@ Core rules:
 6. Do not include long document titles or URLs inside the main answer.
 7. Every substantive claim must be traceable to one of the retrieved sources.
 8. Do not cite sources that are not included in the retrieved context.
-9. In the "Sources used" section, group repeated evidence from the same document into one source entry.
-10. Use this source format:
-   [1] Title of the document. Pages: 5, 6. CGSpace.
-11. The word "CGSpace" should refer to the source URL provided in the retrieved context.
-12. Keep the answer concise, academic, and useful for research or program review.
-
-Write naturally in an academic and analytical style.
-Use structured paragraphs when useful, but do not force bullet points or rigid sections.
-Only include an evidence limitation if truly necessary.
-Do not generate a "Sources used" section in the answer.
-Source cards will be displayed separately in the interface.
-
+9. Do not generate a "Sources used", "Fuentes utilizadas", bibliography, or references section in the answer.
+10. Source cards will be displayed separately in the interface.
+11. Keep the answer natural, concise, academic, and useful for research or program review.
+12. Do not force bullet points. Use paragraphs or bullets only when they help answer the question.
 
 User question:
 {question}
@@ -467,7 +430,7 @@ def answer_question(question: str, top_k: int):
     llm = load_gemini_model()
 
     if llm is None:
-        raise ValueError("GOOGLE_API_KEY is not configured in .env or Streamlit secrets.")
+        raise ValueError("GOOGLE_API_KEY is not configured in Streamlit secrets.")
 
     chunks = retrieve_context(question, top_k=top_k)
     grouped_sources = group_sources(chunks)
@@ -500,9 +463,6 @@ def render_source_card(source):
     )
 
 
-# =========================================================
-# Sidebar
-# =========================================================
 with st.sidebar:
     st.markdown(
         """
@@ -535,9 +495,6 @@ with st.sidebar:
     )
 
 
-# =========================================================
-# Main UI
-# =========================================================
 st.markdown(
     """
     <div class="hero">
@@ -556,10 +513,6 @@ st.markdown(
 )
 
 
-
-# =========================================================
-# Chat state
-# =========================================================
 if "messages" not in st.session_state:
     st.session_state["messages"] = []
 
