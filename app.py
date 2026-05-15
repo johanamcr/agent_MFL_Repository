@@ -3,6 +3,7 @@
 from pathlib import Path
 import os
 from collections import OrderedDict
+import pandas as pd
 
 import streamlit as st
 import chromadb
@@ -265,9 +266,73 @@ def load_gemini_model():
 # =========================================================
 # RAG functions
 # =========================================================
-def retrieve_context(question: str, top_k: int):
-    embedding_model = load_embedding_model()
-    collection = load_chroma_collection()
+@st.cache_resource
+def load_chroma_collection():
+    chroma_path = str(INDEX_DIR / "chroma")
+    chunks_csv = INDEX_DIR / "chunks.csv"
+
+    embedding_function = None
+
+    if not Path(chroma_path).exists():
+        if not chunks_csv.exists():
+            raise FileNotFoundError("No existe data/index/chunks.csv para reconstruir Chroma.")
+
+        st.info("Building ChromaDB from chunks.csv. This may take a few minutes on first launch...")
+
+        import chromadb
+        from chromadb.utils import embedding_functions
+
+        embedding_function = embedding_functions.SentenceTransformerEmbeddingFunction(
+            model_name=f"sentence-transformers/{EMBEDDING_MODEL}"
+        )
+
+        client = chromadb.PersistentClient(
+            path=chroma_path,
+            settings=Settings(anonymized_telemetry=False)
+        )
+
+        collection = client.get_or_create_collection(
+            name=COLLECTION_NAME,
+            embedding_function=embedding_function
+        )
+
+        df = pd.read_csv(chunks_csv)
+        df["chunk_text"] = df["chunk_text"].fillna("").astype(str)
+        df = df[df["chunk_text"].str.strip() != ""].copy()
+
+        ids = []
+        documents = []
+        metadatas = []
+
+        for _, row in df.iterrows():
+            ids.append(str(row["chunk_id"]))
+            documents.append(str(row["chunk_text"]))
+            metadatas.append({
+                "title": str(row.get("title", "")),
+                "document": str(row.get("document", "")),
+                "page": int(row.get("page", 0)),
+                "item_url": str(row.get("item_url", "")),
+                "pdf_url": str(row.get("pdf_url", "")),
+                "pdf_name": str(row.get("pdf_name", "")),
+            })
+
+        batch_size = 100
+        for start in range(0, len(ids), batch_size):
+            end = min(start + batch_size, len(ids))
+            collection.add(
+                ids=ids[start:end],
+                documents=documents[start:end],
+                metadatas=metadatas[start:end],
+            )
+
+        return collection
+
+    client = chromadb.PersistentClient(
+        path=chroma_path,
+        settings=Settings(anonymized_telemetry=False)
+    )
+
+    return client.get_collection(COLLECTION_NAME)
 
     query_embedding = embedding_model.encode(
         question,
