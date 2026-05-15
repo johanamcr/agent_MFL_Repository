@@ -1,0 +1,333 @@
+# -*- coding: utf-8 -*-
+
+import csv
+import re
+import time
+from pathlib import Path
+from urllib.parse import urljoin
+
+import requests
+
+# =========================================================
+# Configuración
+# =========================================================
+BASE_DIR = Path(__file__).resolve().parents[1]
+DATA_DIR = BASE_DIR / "data"
+PDF_DIR = DATA_DIR / "pdfs"
+META_DIR = DATA_DIR / "metadata"
+LOGS_DIR = DATA_DIR / "logs"
+
+for d in [PDF_DIR, META_DIR, LOGS_DIR]:
+    d.mkdir(parents=True, exist_ok=True)
+
+# Cambia este UUID según la colección
+COLLECTION_UUID = "32ac7c8f-6874-4c3a-83b0-6223934600ca"
+
+MAX_PDFS = 400
+PAGE_SIZE = 30
+
+SITE_BASE = "https://cgspace.cgiar.org"
+API_BASE = f"{SITE_BASE}/server/api/"
+DISCOVER_URL = urljoin(API_BASE, "discover/search/objects")
+
+META_FILE = META_DIR / "collection_pdfs_metadata.csv"
+ERROR_LOG = LOGS_DIR / "download_errors.log"
+
+session = requests.Session()
+session.headers.update({
+    "User-Agent": "cgspace-rag-agent/1.0",
+    "Accept": "application/json"
+})
+
+
+# =========================================================
+# Utilidades generales
+# =========================================================
+def safe_filename(name: str) -> str:
+    name = (name or "").strip()
+    bad_chars = ['/', '\\', ':', '*', '?', '"', '<', '>', '|']
+    for ch in bad_chars:
+        name = name.replace(ch, "_")
+    name = re.sub(r"\s+", "_", name)
+    name = re.sub(r"_+", "_", name)
+    return name[:180].strip("_") or "untitled"
+
+
+def looks_like_pdf(path: Path) -> bool:
+    try:
+        with open(path, "rb") as f:
+            return f.read(5) == b"%PDF-"
+    except Exception:
+        return False
+
+
+def get_json(url, params=None):
+    r = session.get(url, params=params, timeout=180)
+    r.raise_for_status()
+    return r.json()
+
+
+# =========================================================
+# Búsqueda de ítems en colección
+# =========================================================
+def search_collection_items(collection_uuid, page=0, size=20):
+    params = {
+        "scope": collection_uuid,
+        "dsoType": "item",
+        "size": size,
+        "page": page
+    }
+
+    data = get_json(DISCOVER_URL, params=params)
+
+    try:
+        objects = data["_embedded"]["searchResult"]["_embedded"]["objects"]
+    except Exception:
+        objects = []
+
+    page_info = data.get("page", {})
+    return objects, page_info.get("totalElements"), page_info.get("totalPages")
+
+
+def extract_item_uuid(discover_obj):
+    try:
+        return discover_obj["_embedded"]["indexableObject"]["uuid"]
+    except Exception:
+        pass
+
+    try:
+        return discover_obj["uuid"]
+    except Exception:
+        pass
+
+    return None
+
+
+def extract_item_title(discover_obj):
+    try:
+        return discover_obj["_embedded"]["indexableObject"]["name"]
+    except Exception:
+        return None
+
+
+# =========================================================
+# Bitstreams vía API
+# =========================================================
+def get_item_bundles(item_uuid):
+    url = f"{API_BASE}core/items/{item_uuid}/bundles"
+    data = get_json(url)
+    return data.get("_embedded", {}).get("bundles", [])
+
+
+def get_bundle_bitstreams(bundle_uuid):
+    url = f"{API_BASE}core/bundles/{bundle_uuid}/bitstreams"
+    data = get_json(url)
+    return data.get("_embedded", {}).get("bitstreams", [])
+
+
+def find_pdf_bitstreams(item_uuid):
+    pdfs = []
+    bundles = get_item_bundles(item_uuid)
+
+    for bundle in bundles:
+        bundle_name = bundle.get("name", "")
+        bundle_uuid = bundle.get("uuid", "")
+
+        if bundle_name.upper() != "ORIGINAL":
+            continue
+
+        bitstreams = get_bundle_bitstreams(bundle_uuid)
+
+        for bs in bitstreams:
+            name = bs.get("name", "")
+            content_url = bs.get("_links", {}).get("content", {}).get("href", "")
+
+            metadata = bs.get("metadata", {})
+            mimetype_entries = metadata.get("dc.format.mimetype", [])
+            mimetypes = [
+                m.get("value", "").lower()
+                for m in mimetype_entries
+                if isinstance(m, dict)
+            ]
+
+            is_pdf = (
+                name.lower().endswith(".pdf")
+                or "application/pdf" in mimetypes
+            )
+
+            if content_url and is_pdf:
+                pdfs.append({
+                    "name": name,
+                    "url": content_url,
+                    "bundle": bundle_name,
+                    "mimetype": ";".join(mimetypes)
+                })
+
+    return pdfs
+
+
+def download_pdf(pdf_url, filename_hint):
+    response = session.get(pdf_url, stream=True, timeout=180, allow_redirects=True)
+    response.raise_for_status()
+
+    filename = safe_filename(filename_hint)
+    if not filename.lower().endswith(".pdf"):
+        filename += ".pdf"
+
+    out_path = PDF_DIR / filename
+
+    counter = 1
+    original_out_path = out_path
+    while out_path.exists():
+        out_path = original_out_path.with_name(
+            f"{original_out_path.stem}_{counter}{original_out_path.suffix}"
+        )
+        counter += 1
+
+    with open(out_path, "wb") as f:
+        for chunk in response.iter_content(chunk_size=8192):
+            if chunk:
+                f.write(chunk)
+
+    return out_path
+
+
+# =========================================================
+# Main
+# =========================================================
+def main():
+    print("Using collection UUID:", COLLECTION_UUID)
+    print("Discover URL:", DISCOVER_URL)
+
+    records = []
+    downloaded = 0
+    checked_items = 0
+    page = 0
+
+    with open(ERROR_LOG, "w", encoding="utf-8") as elog:
+        while downloaded < MAX_PDFS:
+            objects, total_elements, total_pages = search_collection_items(
+                COLLECTION_UUID,
+                page=page,
+                size=PAGE_SIZE
+            )
+
+            if not objects:
+                print("No se encontraron más objetos en la colección.")
+                break
+
+            print("")
+            print("=" * 70)
+            print(f"Página API: {page}")
+            print(f"Total elementos reportados: {total_elements}")
+            print(f"Total páginas reportadas: {total_pages}")
+            print("=" * 70)
+
+            for i, obj in enumerate(objects, start=1):
+                checked_items += 1
+
+                if downloaded >= MAX_PDFS:
+                    break
+
+                try:
+                    item_uuid = extract_item_uuid(obj)
+                    title = extract_item_title(obj) or item_uuid
+
+                    if not item_uuid:
+                        msg = f"PAGE {page} OBJ {i}\tNo se pudo extraer item_uuid\n"
+                        elog.write(msg)
+                        print(f"[{page}:{i}] ERROR: no se pudo extraer item_uuid")
+                        continue
+
+                    item_url = f"{SITE_BASE}/items/{item_uuid}"
+
+                    print("")
+                    print(f"[{downloaded + 1}] Item UUID: {item_uuid}")
+                    print(f"    Title: {title}")
+                    print(f"    Item URL: {item_url}")
+
+                    pdf_candidates = find_pdf_bitstreams(item_uuid)
+                    print(f"    PDF candidates found via API: {len(pdf_candidates)}")
+
+                    if not pdf_candidates:
+                        print("    No PDF bitstreams found via API.")
+                        continue
+
+                    downloaded_this_item = False
+
+                    for pdf_candidate in pdf_candidates:
+                        pdf_url = pdf_candidate["url"]
+                        filename_hint = pdf_candidate["name"] or title
+
+                        pdf_path = download_pdf(pdf_url, filename_hint)
+
+                        if not looks_like_pdf(pdf_path):
+                            print("    El archivo descargado no parece PDF. Se elimina.")
+                            try:
+                                pdf_path.unlink()
+                            except Exception:
+                                pass
+                            continue
+
+                        print(f"    OK -> {pdf_path.name}")
+
+                        downloaded += 1
+                        downloaded_this_item = True
+
+                        records.append({
+                            "collection_uuid": COLLECTION_UUID,
+                            "item_uuid": item_uuid,
+                            "item_url": item_url,
+                            "title": title,
+                            "pdf_url": pdf_url,
+                            "pdf_name": pdf_path.name,
+                            "pdf_path": str(pdf_path),
+                            "downloaded_at": time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
+                        })
+
+                        break
+
+                    if not downloaded_this_item:
+                        print("    No se pudo descargar un PDF válido para este ítem.")
+
+                    time.sleep(0.3)
+
+                except Exception as e:
+                    msg = f"PAGE {page} OBJ {i}\t{type(e).__name__}\t{str(e)}\n"
+                    elog.write(msg)
+                    print(f"    ERROR: {e}")
+                    continue
+
+            page += 1
+
+            if total_pages is not None and page >= total_pages:
+                break
+
+    with open(META_FILE, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(
+            f,
+            fieldnames=[
+                "collection_uuid",
+                "item_uuid",
+                "item_url",
+                "title",
+                "pdf_url",
+                "pdf_name",
+                "pdf_path",
+                "downloaded_at"
+            ]
+        )
+        writer.writeheader()
+        writer.writerows(records)
+
+    print("")
+    print("=" * 70)
+    print(f"Ítems revisados: {checked_items}")
+    print(f"PDFs descargados: {len(records)}")
+    print(f"Metadata: {META_FILE}")
+    print(f"Errores: {ERROR_LOG}")
+    print("=" * 70)
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,14 @@
+.venv/
+.env
+__pycache__/
+*.pyc
+
+data/pdfs/
+data/processed/
+data/logs/
+data/index/chroma/
+data/index/chroma_*/
+data/index/active_chroma_path.txt
+
+.DS_Store
+.vscode/

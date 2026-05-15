@@ -1,0 +1,13 @@
+streamlit
+pandas
+numpy
+pymupdf
+requests
+python-dotenv
+
+langchain
+langchain-community
+langchain-openai
+chromadb
+sentence-transformers
+google-generativeai
