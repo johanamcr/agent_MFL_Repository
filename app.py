@@ -36,141 +36,90 @@ st.markdown(
     """
     <style>
         :root {
-            --bg: #ffffff;
-            --card: #ffffff;
-            --text: #252938;
-            --muted: #6b7280;
-            --muted-2: #9ca3af;
-            --border: #e5e7eb;
-            --soft: #f5f7f9;
-            --accent: #00543C;
-            --accent-soft: #e6f4ea;
-            --radius: 12px;
-            --shadow: 0 2px 12px rgba(0,0,0,0.06);
+            --radius: 8px;
             --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
             --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
         }
 
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --bg: #0f1117;
-                --card: #171a22;
-                --text: #f1f5f9;
-                --muted: #cbd5e1;
-                --muted-2: #94a3b8;
-                --border: #2d3340;
-                --soft: #1f2430;
-                --accent: #63C08A;
-                --accent-soft: #173326;
-                --shadow: 0 2px 12px rgba(0,0,0,0.35);
-            }
-        }
-
-        html, body, .stApp, [data-testid="stAppViewContainer"] {
-            background: var(--bg) !important;
-            color: var(--text) !important;
-        }
-
-        [data-testid="stHeader"] {
-            background: var(--bg) !important;
-        }
-
-        [data-testid="stSidebar"] {
-            display: none !important;
-        }
-
         .block-container {
             max-width: 1180px;
-            padding-top: 0.8rem;
+            padding-top: 2.8rem;
             padding-bottom: 6rem;
         }
 
+        [data-testid="stSidebar"] {
+            display: none;
+        }
+
         .hero {
-            background: var(--card);
-            border: 1px solid var(--border);
+            border: 1px solid rgba(128, 128, 128, 0.25);
             border-radius: var(--radius);
-            padding: 1.35rem 1.6rem 1.15rem;
-            margin-bottom: 0.75rem;
-            box-shadow: var(--shadow);
+            padding: 1.6rem 1.8rem 1.35rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 1px 8px rgba(0,0,0,0.08);
         }
 
         .hero-top {
             display: flex;
             align-items: center;
-            gap: 0.55rem;
-            margin-bottom: 0.55rem;
+            gap: 0.65rem;
+            margin-bottom: 0.8rem;
         }
 
         .hero-badge {
             font-family: var(--font-mono);
-            font-size: 0.7rem;
+            font-size: 0.72rem;
             letter-spacing: 0.04em;
             text-transform: uppercase;
-            color: var(--muted-2);
+            opacity: 0.6;
         }
 
         .hero-status {
             font-family: var(--font-mono);
             font-size: 0.68rem;
-            padding: 0.15rem 0.45rem;
+            padding: 0.15rem 0.5rem;
             border-radius: 4px;
-            background-color: var(--accent-soft);
-            color: var(--accent);
-            font-weight: 650;
+            font-weight: 600;
+            color: #1F5E3B;
+            background-color: #E6F4EA;
         }
 
         .hero-title {
             font-family: var(--font);
-            font-size: clamp(1.8rem, 4vw, 2.45rem);
-            font-weight: 780;
+            font-size: clamp(2rem, 4vw, 3rem);
+            font-weight: 760;
             letter-spacing: -0.035em;
-            margin: 0 0 0.65rem 0;
-            color: var(--text);
+            margin: 0 0 0.85rem 0;
             line-height: 1.12;
         }
 
         .hero-desc {
             font-family: var(--font);
-            font-size: 0.98rem;
-            line-height: 1.5;
-            color: var(--muted);
+            font-size: 1.02rem;
+            line-height: 1.55;
+            opacity: 0.78;
             margin: 0;
-            max-width: 920px;
+            max-width: 970px;
         }
 
         .hero-meta {
-            margin-top: 0.9rem;
-            padding-top: 0.75rem;
-            border-top: 1px solid var(--border);
+            margin-top: 1.1rem;
+            padding-top: 0.85rem;
+            border-top: 1px solid rgba(128, 128, 128, 0.25);
             font-family: var(--font);
-            font-size: 0.76rem;
-            color: var(--muted-2);
-        }
-
-        div[data-testid="stExpander"] {
-            background: var(--card) !important;
-            border: 1px solid var(--border) !important;
-            border-radius: var(--radius) !important;
-            box-shadow: none !important;
-            margin-bottom: 0.8rem;
-        }
-
-        div[data-testid="stExpander"] details summary {
-            color: var(--text) !important;
-            font-family: var(--font);
+            font-size: 0.78rem;
+            opacity: 0.58;
         }
 
         .source-card {
             display: flex;
             gap: 0.65rem;
-            border: 1px solid var(--border);
-            border-left: 3px solid var(--accent);
+            border: 1px solid rgba(128, 128, 128, 0.22);
+            border-left: 3px solid #63C08A;
             border-radius: 0 var(--radius) var(--radius) 0;
             padding: 0.75rem 0.9rem;
             margin-bottom: 0.55rem;
-            background: var(--card);
-            box-shadow: var(--shadow);
-            color: var(--text);
+            box-shadow: 0 1px 5px rgba(0,0,0,0.05);
         }
 
         .source-card-icon {
@@ -178,8 +127,7 @@ st.markdown(
             height: 16px;
             flex-shrink: 0;
             margin-top: 0.15rem;
-            opacity: 0.45;
-            color: var(--muted);
+            opacity: 0.35;
         }
 
         .source-card-body {
@@ -190,8 +138,7 @@ st.markdown(
         .source-title {
             font-family: var(--font);
             font-size: 0.9rem;
-            font-weight: 650;
-            color: var(--text);
+            font-weight: 600;
             margin-bottom: 0.15rem;
             line-height: 1.4;
         }
@@ -199,12 +146,12 @@ st.markdown(
         .source-meta {
             font-family: var(--font-mono);
             font-size: 0.75rem;
-            color: var(--muted);
+            opacity: 0.65;
             line-height: 1.5;
         }
 
         .source-meta a {
-            color: var(--accent) !important;
+            color: #007A53 !important;
             font-weight: 650;
             text-decoration: none;
         }
@@ -213,30 +160,26 @@ st.markdown(
             text-decoration: underline;
         }
 
-        div[data-testid="stChatMessage"] {
-            background: transparent !important;
-            color: var(--text) !important;
-        }
-
         div[data-testid="stChatMessageContent"] {
             font-family: var(--font);
             font-size: 0.94rem;
             line-height: 1.65;
-            color: var(--text) !important;
         }
 
-        div[data-testid="stChatMessageContent"] p,
-        .stMarkdown,
-        .stMarkdown p,
-        .stMarkdown li,
-        .stMarkdown span {
-            color: var(--text) !important;
+        div[data-testid="stChatMessageContent"] p {
+            margin: 0.35rem 0;
+        }
+
+        .stMarkdown {
+            font-family: var(--font);
         }
 
         textarea, input {
             font-family: var(--font) !important;
-            background-color: var(--soft) !important;
-            color: var(--text) !important;
+        }
+
+        .stSlider label {
+            font-weight: 500;
         }
 
         div[data-testid="stChatInput"] {
@@ -244,9 +187,33 @@ st.markdown(
             margin: 0 auto;
         }
 
-        .stSlider label {
-            font-weight: 500;
-            color: var(--text) !important;
+        div[data-testid="stExpander"] {
+            border-radius: var(--radius);
+            margin-top: 0.5rem;
+            margin-bottom: 0.8rem;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .hero {
+                background: rgba(255,255,255,0.03);
+                border: 1px solid rgba(255,255,255,0.12);
+                box-shadow: 0 1px 10px rgba(0,0,0,0.35);
+            }
+
+            .source-card {
+                background: rgba(255,255,255,0.03);
+                border-color: rgba(255,255,255,0.12);
+                border-left-color: #63C08A;
+            }
+
+            .source-meta a {
+                color: #7BE0A3 !important;
+            }
+
+            .hero-status {
+                color: #9BE7B5;
+                background-color: rgba(99, 192, 138, 0.18);
+            }
         }
     </style>
     """,
@@ -551,17 +518,6 @@ st.markdown(
 )
 
 
-top_k_user = TOP_K_DEFAULT
-
-with st.expander("Settings", expanded=False):
-    top_k_user = st.slider(
-        "Number of document segments retrieved per query",
-        min_value=3,
-        max_value=12,
-        value=TOP_K_DEFAULT
-    )
-
-
 if "messages" not in st.session_state:
     st.session_state["messages"] = []
 
@@ -574,6 +530,17 @@ for msg in st.session_state["messages"]:
             with st.expander("CGSpace document sources"):
                 for source in msg["sources"]:
                     render_source_card(source)
+
+
+top_k_user = TOP_K_DEFAULT
+
+with st.expander("Settings", expanded=False):
+    top_k_user = st.slider(
+        "Number of document segments retrieved per query",
+        min_value=3,
+        max_value=12,
+        value=TOP_K_DEFAULT
+    )
 
 
 user_question = st.chat_input("Ask a question about the MFL document collection...")
