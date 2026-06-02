@@ -26,7 +26,7 @@ TOP_K_DEFAULT = 8
 
 
 st.set_page_config(
-    page_title="Research Assistant Agent",
+    page_title="MFL Research Assistant",
     page_icon="🌿",
     layout="wide"
 )
@@ -36,218 +36,107 @@ st.markdown(
     """
     <style>
         :root {
-            --radius: 6px;
-            --shadow: 0 0 4px;
-            --shadow-lg: 0 1px 4px;
+            --radius: 10px;
             --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
             --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
         }
 
-        .block-container {
-            max-width: 1120px;
-            padding-top: 3rem;
-            padding-bottom: 5rem;
+        .stApp {
+            background: #FFFFFF !important;
         }
 
-        .block-container::before {
-            content: '';
-            position: fixed;
-            top: -25vh;
-            left: -10vw;
-            width: 50vw;
-            height: 50vh;
-            background: radial-gradient(circle, transparent 70%);
-            opacity: 0.035;
-            pointer-events: none;
-            z-index: -1;
+        [data-testid="stHeader"] {
+            background: #FFFFFF !important;
+        }
+
+        [data-testid="stSidebar"] {
+            display: none;
+        }
+
+        .block-container {
+            max-width: 1180px;
+            padding-top: 1.2rem;
+            padding-bottom: 2.5rem;
         }
 
         .hero {
+            background: #FFFFFF;
+            border: 1px solid #E5E7EB;
             border-radius: var(--radius);
-            padding: 1.5rem 1.75rem 1.25rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .hero::after {
-            content: "";
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            border-radius: inherit; 
-            box-shadow: var(--shadow); 
-            opacity: 0.2;
+            padding: 1.8rem 2rem 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
         }
 
         .hero-top {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
-            margin-bottom: 0.75rem;
+            gap: 0.55rem;
+            margin-bottom: 0.65rem;
         }
 
         .hero-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.4rem;
             font-family: var(--font-mono);
             font-size: 0.7rem;
-            letter-spacing: 0.02em;
+            letter-spacing: 0.04em;
             text-transform: uppercase;
-            opacity: 0.5;
-        }
-
-        .hero-badge svg {
-            width: 10px;
-            height: 10px;
-            opacity: 0.8;
+            color: #8A8F98;
         }
 
         .hero-status {
             font-family: var(--font-mono);
-            font-size: 0.65rem;
-            padding: 0.1rem 0.45rem;
-            border-radius: 3px;
-            font-weight: 500;
-            letter-spacing: 0.02em;
-            background-color: rgba(0, 128, 0, 0.1);
-        }
-
-        .hero-status svg {
-            width: 10px;
-            height: 10px;
-            opacity: 0.8;
+            font-size: 0.68rem;
+            padding: 0.15rem 0.45rem;
+            border-radius: 4px;
+            background-color: #E6F4EA;
+            color: #1F5E3B;
+            font-weight: 600;
         }
 
         .hero-title {
             font-family: var(--font);
-            font-size: 1.5rem;
-            font-weight: 650;
-            letter-spacing: -0.02em;
-            margin: 0 0 0.5rem 0;
-            line-height: 1.25;
+            font-size: 2.25rem;
+            font-weight: 750;
+            letter-spacing: -0.03em;
+            margin: 0 0 0.8rem 0;
+            color: #1F2430;
+            line-height: 1.15;
         }
 
         .hero-desc {
             font-family: var(--font);
-            font-size: 0.88rem;
+            font-size: 1rem;
             line-height: 1.55;
-            opacity: 0.7;
-            margin: 0 0 1rem 0;
-            max-width: 680px;
-            padding-bottom: 1rem;
+            color: #68707D;
+            margin: 0;
+            max-width: 860px;
         }
 
         .hero-meta {
+            margin-top: 1.1rem;
+            padding-top: 0.85rem;
+            border-top: 1px solid #E5E7EB;
+            font-family: var(--font);
+            font-size: 0.78rem;
+            color: #8A8F98;
+        }
+
+        .settings-row {
             display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 0.4rem;
-            font-family: var(--font);
-            font-size: 0.75rem;
-            opacity: 0.5;
-        }
-
-        .hero-meta-item {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.3rem;
-        }
-
-        .hero-meta-item svg {
-            width: 13px;
-            height: 13px;
-            opacity: 0.65;
-            flex-shrink: 0;
-        }
-
-        .meta-sep {
-            opacity: 0.3;
-            user-select: none;
-        }
-
-        [data-testid="stSidebar"] {
-            padding-top: 0.5rem;
-        }
-
-        .sidebar-section-text-container {
-            margin-bottom: 1.5rem;
-        }
-
-        .sidebar-title {
-            font-family: var(--font);
-            font-size: 1rem;
-            font-weight: 600;
-            margin-bottom: 0.05rem;
-            letter-spacing: -0.01em;
-        }
-
-        .sidebar-affil {
-            font-family: var(--font-mono);
-            font-size: 0.62rem;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            opacity: 0.4;
-            margin-bottom: 1.25rem;
-        }
-
-        .sidebar-header {
-            padding-bottom: 0;
-        }
-
-        .sidebar-brand {
-            display: flex;
-            align-items: flex-start;
-            gap: 0.65rem;
-        }
-
-        .sidebar-brand-icon {
-            width: 22px;
-            height: 22px;
-            flex-shrink: 0;
-            margin-top: 0.15rem;
-            opacity: 0.6;
-            transition: opacity 0.15s;
-        }
-
-        .sidebar-brand-icon svg {
-            width: 22px;
-            height: 22px;
-        }
-
-        .sidebar-brand:hover .sidebar-brand-icon {
-            opacity: 0.9;
-        }
-
-        .sidebar-section-label {
-            font-family: var(--font);
-            font-size: 0.6rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            margin-bottom: 0.4rem;
-            opacity: 0.35;
-        }
-
-        .sidebar-text {
-            font-family: var(--font);
-            font-size: 0.82rem;
-            line-height: 1.5;
-            opacity: 0.55;
+            justify-content: flex-end;
+            margin-bottom: 0.8rem;
         }
 
         .source-card {
             display: flex;
             gap: 0.65rem;
-            border: 1px solid;
-            border-left: 3px solid;
+            border: 1px solid #E5E7EB;
+            border-left: 3px solid #63C08A;
             border-radius: 0 var(--radius) var(--radius) 0;
-            padding: 0.7rem 0.9rem;
-            margin-bottom: 0.5rem;
-            box-shadow: var(--shadow);
-            transition: background 0.15s, border-color 0.15s;
-        }
-
-        .source-card:hover {
-            border-left-color: transparent; /* Se remueve la dependencia de var(--accent) al hacer hover */
+            padding: 0.75rem 0.9rem;
+            margin-bottom: 0.55rem;
+            background: #FFFFFF;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.035);
         }
 
         .source-card-icon {
@@ -255,7 +144,7 @@ st.markdown(
             height: 16px;
             flex-shrink: 0;
             margin-top: 0.15rem;
-            opacity: 0.3;
+            opacity: 0.4;
         }
 
         .source-card-body {
@@ -265,20 +154,23 @@ st.markdown(
 
         .source-title {
             font-family: var(--font);
-            font-size: 0.88rem;
-            font-weight: 500;
-            margin-bottom: 0.1rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #1F3B2F;
+            margin-bottom: 0.15rem;
             line-height: 1.4;
         }
 
         .source-meta {
             font-family: var(--font-mono);
-            font-size: 0.73rem;
-            opacity: 0.5;
+            font-size: 0.75rem;
+            color: #6B7280;
             line-height: 1.5;
         }
 
         .source-meta a {
+            color: #00543C !important;
+            font-weight: 600;
             text-decoration: none;
         }
 
@@ -288,12 +180,12 @@ st.markdown(
 
         div[data-testid="stChatMessageContent"] {
             font-family: var(--font);
-            font-size: 0.92rem;
+            font-size: 0.94rem;
             line-height: 1.65;
         }
 
         div[data-testid="stChatMessageContent"] p {
-            margin: 0.3rem 0;
+            margin: 0.35rem 0;
         }
 
         .stMarkdown {
@@ -306,6 +198,11 @@ st.markdown(
 
         .stSlider label {
             font-weight: 500;
+        }
+
+        div[data-testid="stChatInput"] {
+            max-width: 1180px;
+            margin: 0 auto;
         }
     </style>
     """,
@@ -368,9 +265,7 @@ def load_chroma_collection():
         )
 
     if not CHUNKS_CSV.exists():
-        raise FileNotFoundError("No existe data/index/chunks.csv para construir Chroma.")
-
-    st.info("Building ChromaDB from chunks.csv. This may take a few minutes on first launch...")
+        raise FileNotFoundError("data/index/chunks.csv was not found.")
 
     collection = client.get_or_create_collection(
         name=COLLECTION_NAME,
@@ -386,7 +281,7 @@ def load_chroma_collection():
 
     missing = [c for c in required_cols if c not in df.columns]
     if missing:
-        raise ValueError(f"Faltan columnas en chunks.csv: {missing}")
+        raise ValueError(f"Missing columns in chunks.csv: {missing}")
 
     df["chunk_text"] = df["chunk_text"].fillna("").astype(str)
     df = df[df["chunk_text"].str.strip() != ""].copy()
@@ -570,7 +465,13 @@ def render_source_card(source):
     st.markdown(
         f"""
         <div class="source-card">
-            <svg class="source-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            <svg class="source-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                 <polyline points="14 2 14 8 20 8"/>
+                 <line x1="16" y1="13" x2="8" y2="13"/>
+                 <line x1="16" y1="17" x2="8" y2="17"/>
+            </svg>
             <div class="source-card-body">
                 <div class="source-title">[{source['id']}] {title}</div>
                 <div class="source-meta">
@@ -583,81 +484,36 @@ def render_source_card(source):
     )
 
 
-with st.sidebar:
-    st.markdown(
-        """
-        <div class="sidebar-header">
-            <div class="sidebar-brand">
-                <span class="sidebar-brand-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-                </span>
-                <div>
-                    <div class="sidebar-title">MFL Research</div>
-                    <div class="sidebar-affil">CGIAR Science Program</div>
-                </div>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    st.markdown("<hr style='margin:0.75rem 0 1rem;opacity:0.15;'>", unsafe_allow_html=True)
-
-    st.markdown(
-        """
-        <div class="sidebar-section-text-container">
-            <div class="sidebar-section-label">Settings</div>
-            <div class="sidebar-text">
-            Set the number of document segments to retrieve per query.
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    top_k_user = st.slider(
-        "Document segments.",
-        min_value=3,
-        max_value=12,
-        value=TOP_K_DEFAULT
-    )
-
-
 st.markdown(
     """
     <div class="hero">
         <div class="hero-top">
-            <span class="hero-badge">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="6"/></svg>
-                CGIAR · MFL
-            </span>
-            <span class="hero-status">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="10"><circle cx="12" cy="12" r="1"/></svg>
-                Active Agent
-            </span>
+            <span class="hero-badge">CGIAR · MFL</span>
+            <span class="hero-status">Active Agent</span>
         </div>
-        <h1 class="hero-title">Research Assistant</h1>
+        <h1 class="hero-title">MFL Research Assistant</h1>
         <p class="hero-desc">
-        Explore program documents, reports, briefs, and evidence through questions grounded
-        in sources retrieved from the official CGIAR repository.
+        Explore the 328 PDF files in the official CGSpace collection of the CGIAR Scientific Program on
+        Multifunctional Landscapes. Ask a question or enter keywords; the assistant will search the
+        documents and generate a response.
         </p>
-        <hr style='margin:0.75rem 0 1rem;opacity:0.6;'>
         <div class="hero-meta">
-            <span class="hero-meta-item">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                Source Corpus: Official CGSpace collection for the CGIAR Science Program on Multifunctional Landscapes.
-            </span>
-            <span class="meta-sep">·</span>
-            <span class="hero-meta-item">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-                Gemini Flash Lite
-            </span>
-            <span class="meta-sep">·</span>
+            Source corpus: Official CGSpace collection for the CGIAR Science Program on Multifunctional Landscapes.
+            &nbsp;·&nbsp; Gemini Flash Lite
         </div>
     </div>
     """,
     unsafe_allow_html=True
 )
+
+
+with st.expander("Settings", expanded=False):
+    top_k_user = st.slider(
+        "Number of document segments retrieved per query",
+        min_value=3,
+        max_value=12,
+        value=TOP_K_DEFAULT
+    )
 
 
 if "messages" not in st.session_state:
@@ -687,7 +543,7 @@ if user_question:
         st.markdown(user_question)
 
     with st.chat_message("assistant"):
-        with st.spinner("Retrieving evidence from CGSpace documents and generating answer..."):
+        with st.spinner("Searching the CGSpace document collection and generating an answer..."):
             try:
                 answer, grouped_sources = answer_question(user_question, top_k=top_k_user)
 
