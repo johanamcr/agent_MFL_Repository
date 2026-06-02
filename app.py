@@ -36,43 +36,69 @@ st.markdown(
     """
     <style>
         :root {
-            --radius: 10px;
+            --bg: #ffffff;
+            --card: #ffffff;
+            --text: #252938;
+            --muted: #6b7280;
+            --muted-2: #9ca3af;
+            --border: #e5e7eb;
+            --soft: #f5f7f9;
+            --accent: #00543C;
+            --accent-soft: #e6f4ea;
+            --radius: 12px;
+            --shadow: 0 2px 12px rgba(0,0,0,0.06);
             --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
             --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
         }
 
-        .stApp {
-            background: #FFFFFF !important;
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #0f1117;
+                --card: #171a22;
+                --text: #f1f5f9;
+                --muted: #cbd5e1;
+                --muted-2: #94a3b8;
+                --border: #2d3340;
+                --soft: #1f2430;
+                --accent: #63C08A;
+                --accent-soft: #173326;
+                --shadow: 0 2px 12px rgba(0,0,0,0.35);
+            }
+        }
+
+        html, body, .stApp, [data-testid="stAppViewContainer"] {
+            background: var(--bg) !important;
+            color: var(--text) !important;
         }
 
         [data-testid="stHeader"] {
-            background: #FFFFFF !important;
+            background: var(--bg) !important;
         }
 
         [data-testid="stSidebar"] {
-            display: none;
+            display: none !important;
         }
 
         .block-container {
             max-width: 1180px;
-            padding-top: 1.2rem;
-            padding-bottom: 2.5rem;
+            padding-top: 0.8rem;
+            padding-bottom: 6rem;
         }
 
         .hero {
-            background: #FFFFFF;
-            border: 1px solid #E5E7EB;
+            background: var(--card);
+            border: 1px solid var(--border);
             border-radius: var(--radius);
-            padding: 1.8rem 2rem 1.5rem;
-            margin-bottom: 1rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            padding: 1.35rem 1.6rem 1.15rem;
+            margin-bottom: 0.75rem;
+            box-shadow: var(--shadow);
         }
 
         .hero-top {
             display: flex;
             align-items: center;
             gap: 0.55rem;
-            margin-bottom: 0.65rem;
+            margin-bottom: 0.55rem;
         }
 
         .hero-badge {
@@ -80,7 +106,7 @@ st.markdown(
             font-size: 0.7rem;
             letter-spacing: 0.04em;
             text-transform: uppercase;
-            color: #8A8F98;
+            color: var(--muted-2);
         }
 
         .hero-status {
@@ -88,55 +114,63 @@ st.markdown(
             font-size: 0.68rem;
             padding: 0.15rem 0.45rem;
             border-radius: 4px;
-            background-color: #E6F4EA;
-            color: #1F5E3B;
-            font-weight: 600;
+            background-color: var(--accent-soft);
+            color: var(--accent);
+            font-weight: 650;
         }
 
         .hero-title {
             font-family: var(--font);
-            font-size: 2.25rem;
-            font-weight: 750;
-            letter-spacing: -0.03em;
-            margin: 0 0 0.8rem 0;
-            color: #1F2430;
-            line-height: 1.15;
+            font-size: clamp(1.8rem, 4vw, 2.45rem);
+            font-weight: 780;
+            letter-spacing: -0.035em;
+            margin: 0 0 0.65rem 0;
+            color: var(--text);
+            line-height: 1.12;
         }
 
         .hero-desc {
             font-family: var(--font);
-            font-size: 1rem;
-            line-height: 1.55;
-            color: #68707D;
+            font-size: 0.98rem;
+            line-height: 1.5;
+            color: var(--muted);
             margin: 0;
-            max-width: 860px;
+            max-width: 920px;
         }
 
         .hero-meta {
-            margin-top: 1.1rem;
-            padding-top: 0.85rem;
-            border-top: 1px solid #E5E7EB;
+            margin-top: 0.9rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid var(--border);
             font-family: var(--font);
-            font-size: 0.78rem;
-            color: #8A8F98;
+            font-size: 0.76rem;
+            color: var(--muted-2);
         }
 
-        .settings-row {
-            display: flex;
-            justify-content: flex-end;
+        div[data-testid="stExpander"] {
+            background: var(--card) !important;
+            border: 1px solid var(--border) !important;
+            border-radius: var(--radius) !important;
+            box-shadow: none !important;
             margin-bottom: 0.8rem;
+        }
+
+        div[data-testid="stExpander"] details summary {
+            color: var(--text) !important;
+            font-family: var(--font);
         }
 
         .source-card {
             display: flex;
             gap: 0.65rem;
-            border: 1px solid #E5E7EB;
-            border-left: 3px solid #63C08A;
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--accent);
             border-radius: 0 var(--radius) var(--radius) 0;
             padding: 0.75rem 0.9rem;
             margin-bottom: 0.55rem;
-            background: #FFFFFF;
-            box-shadow: 0 1px 5px rgba(0,0,0,0.035);
+            background: var(--card);
+            box-shadow: var(--shadow);
+            color: var(--text);
         }
 
         .source-card-icon {
@@ -144,7 +178,8 @@ st.markdown(
             height: 16px;
             flex-shrink: 0;
             margin-top: 0.15rem;
-            opacity: 0.4;
+            opacity: 0.45;
+            color: var(--muted);
         }
 
         .source-card-body {
@@ -155,8 +190,8 @@ st.markdown(
         .source-title {
             font-family: var(--font);
             font-size: 0.9rem;
-            font-weight: 600;
-            color: #1F3B2F;
+            font-weight: 650;
+            color: var(--text);
             margin-bottom: 0.15rem;
             line-height: 1.4;
         }
@@ -164,13 +199,13 @@ st.markdown(
         .source-meta {
             font-family: var(--font-mono);
             font-size: 0.75rem;
-            color: #6B7280;
+            color: var(--muted);
             line-height: 1.5;
         }
 
         .source-meta a {
-            color: #00543C !important;
-            font-weight: 600;
+            color: var(--accent) !important;
+            font-weight: 650;
             text-decoration: none;
         }
 
@@ -178,31 +213,40 @@ st.markdown(
             text-decoration: underline;
         }
 
+        div[data-testid="stChatMessage"] {
+            background: transparent !important;
+            color: var(--text) !important;
+        }
+
         div[data-testid="stChatMessageContent"] {
             font-family: var(--font);
             font-size: 0.94rem;
             line-height: 1.65;
+            color: var(--text) !important;
         }
 
-        div[data-testid="stChatMessageContent"] p {
-            margin: 0.35rem 0;
-        }
-
-        .stMarkdown {
-            font-family: var(--font);
+        div[data-testid="stChatMessageContent"] p,
+        .stMarkdown,
+        .stMarkdown p,
+        .stMarkdown li,
+        .stMarkdown span {
+            color: var(--text) !important;
         }
 
         textarea, input {
             font-family: var(--font) !important;
-        }
-
-        .stSlider label {
-            font-weight: 500;
+            background-color: var(--soft) !important;
+            color: var(--text) !important;
         }
 
         div[data-testid="stChatInput"] {
             max-width: 1180px;
             margin: 0 auto;
+        }
+
+        .stSlider label {
+            font-weight: 500;
+            color: var(--text) !important;
         }
     </style>
     """,
@@ -506,6 +550,8 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+
+top_k_user = TOP_K_DEFAULT
 
 with st.expander("Settings", expanded=False):
     top_k_user = st.slider(
