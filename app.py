@@ -35,161 +35,278 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    .stApp {
-        background: #F7FAF8 !important;
-        color: #17231D !important;
-    }
+        :root {
+            --radius: 6px;
+            --shadow: 0 0 4px;
+            --shadow-lg: 0 1px 4px;
+            --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+        }
 
-    [data-testid="stHeader"] {
-        background: #F7FAF8 !important;
-    }
+        .block-container {
+            max-width: 1120px;
+            padding-top: 3rem;
+            padding-bottom: 5rem;
+        }
 
-    .block-container {
-        max-width: 1050px;
-        padding-top: 2rem;
-        padding-bottom: 5rem;
-    }
+        .block-container::before {
+            content: '';
+            position: fixed;
+            top: -25vh;
+            left: -10vw;
+            width: 50vw;
+            height: 50vh;
+            background: radial-gradient(circle, transparent 70%);
+            opacity: 0.035;
+            pointer-events: none;
+            z-index: -1;
+        }
 
-    .hero {
-        background: linear-gradient(135deg, #003D2B 0%, #00543C 55%, #63C08A 100%);
-        border-radius: 18px;
-        padding: 2.2rem 2.4rem;
-        color: white;
-        margin-bottom: 1.6rem;
-        box-shadow: 0 12px 30px rgba(0, 61, 43, 0.13);
-    }
+        .hero {
+            border-radius: var(--radius);
+            padding: 1.5rem 1.75rem 1.25rem;
+            margin-bottom: 1.5rem;
+        }
 
-    .hero-label {
-        font-size: 0.78rem;
-        letter-spacing: 0.08rem;
-        text-transform: uppercase;
-        opacity: 0.9;
-        font-weight: 700;
-        margin-bottom: 0.8rem;
-    }
+        .hero::after {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            border-radius: inherit; 
+            box-shadow: var(--shadow); 
+            opacity: 0.2;
+        }
 
-    .hero h1 {
-        font-size: 2.2rem;
-        margin: 0;
-        font-weight: 800;
-        line-height: 1.15;
-    }
+        .hero-top {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
 
-    .hero h2 {
-        font-size: 1.02rem;
-        margin-top: 1.2rem;
-        line-height: 1.5;
-        font-weight: 550;
-        max-width: 850px;
-        opacity: 0.96;
-    }
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+            opacity: 0.5;
+        }
 
-    .hero-credit {
-        font-size: 0.84rem;
-        margin-top: 1.4rem;
-        padding-top: 1rem;
-        border-top: 1px solid rgba(255,255,255,0.24);
-        opacity: 0.9;
-    }
+        .hero-badge svg {
+            width: 10px;
+            height: 10px;
+            opacity: 0.8;
+        }
 
-    [data-testid="stSidebar"] {
-        background: #EFF8F2 !important;
-        color: #17231D !important;
-    }
+        .hero-status {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            padding: 0.1rem 0.45rem;
+            border-radius: 3px;
+            font-weight: 500;
+            letter-spacing: 0.02em;
+            background-color: rgba(0, 128, 0, 0.1);
+        }
 
-    .sidebar-title {
-        color: #003D2B;
-        font-size: 1.2rem;
-        font-weight: 800;
-        margin-bottom: 1rem;
-    }
+        .hero-status svg {
+            width: 10px;
+            height: 10px;
+            opacity: 0.8;
+        }
 
-    .sidebar-text {
-        color: #30483B;
-        font-size: 0.9rem;
-        line-height: 1.45;
-    }
+        .hero-title {
+            font-family: var(--font);
+            font-size: 1.5rem;
+            font-weight: 650;
+            letter-spacing: -0.02em;
+            margin: 0 0 0.5rem 0;
+            line-height: 1.25;
+        }
 
-    .fake-logo {
-        display: flex;
-        width: 100%;
-        border-radius: 3px;
-        overflow: hidden;
-        margin-bottom: 1.1rem;
-        border: 1px solid #DCEBE4;
-    }
+        .hero-desc {
+            font-family: var(--font);
+            font-size: 0.88rem;
+            line-height: 1.55;
+            opacity: 0.7;
+            margin: 0 0 1rem 0;
+            max-width: 680px;
+            padding-bottom: 1rem;
+        }
 
-    .fake-logo-left {
-        background:#003D2B;
-        color:white;
-        font-weight:800;
-        font-size:1.45rem;
-        padding:1.05rem 0.8rem;
-        width:50%;
-        display:flex;
-        align-items:center;
-        justify-content:center;
-    }
+        .hero-meta {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.4rem;
+            font-family: var(--font);
+            font-size: 0.75rem;
+            opacity: 0.5;
+        }
 
-    .fake-logo-right {
-        background:#63C08A;
-        color:#003D2B;
-        font-weight:800;
-        font-size:0.82rem;
-        line-height:1.05;
-        padding:1rem 0.75rem;
-        width:50%;
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        text-align:left;
-    }
+        .hero-meta-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
 
-    .source-card {
-        background-color: #FFFFFF;
-        border: 1px solid #DCEBE4;
-        border-left: 5px solid #63C08A;
-        border-radius: 12px;
-        padding: 0.95rem 1rem;
-        margin-bottom: 0.75rem;
-        color: #17231D;
-        box-shadow: 0 3px 10px rgba(0,0,0,0.035);
-    }
+        .hero-meta-item svg {
+            width: 13px;
+            height: 13px;
+            opacity: 0.65;
+            flex-shrink: 0;
+        }
 
-    .source-title {
-        font-weight: 750;
-        color: #003D2B;
-        margin-bottom: 0.25rem;
-    }
+        .meta-sep {
+            opacity: 0.3;
+            user-select: none;
+        }
 
-    .source-meta {
-        font-size: 0.88rem;
-        color: #5B6B63;
-        margin-bottom: 0.35rem;
-    }
+        [data-testid="stSidebar"] {
+            padding-top: 0.5rem;
+        }
 
-    .source-card a {
-        color: #00543C !important;
-        font-weight: 700;
-        text-decoration: none;
-    }
+        .sidebar-section-text-container {
+            margin-bottom: 1.5rem;
+        }
 
-    .source-card a:hover {
-        text-decoration: underline;
-    }
+        .sidebar-title {
+            font-family: var(--font);
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.05rem;
+            letter-spacing: -0.01em;
+        }
 
-    div[data-testid="stChatMessageContent"] {
-        color: #17231D !important;
-    }
+        .sidebar-affil {
+            font-family: var(--font-mono);
+            font-size: 0.62rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            opacity: 0.4;
+            margin-bottom: 1.25rem;
+        }
 
-    .stMarkdown {
-        color: #17231D !important;
-    }
+        .sidebar-header {
+            padding-bottom: 0;
+        }
 
-    textarea, input {
-        background-color: #FFFFFF !important;
-        color: #17231D !important;
-    }
+        .sidebar-brand {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.65rem;
+        }
+
+        .sidebar-brand-icon {
+            width: 22px;
+            height: 22px;
+            flex-shrink: 0;
+            margin-top: 0.15rem;
+            opacity: 0.6;
+            transition: opacity 0.15s;
+        }
+
+        .sidebar-brand-icon svg {
+            width: 22px;
+            height: 22px;
+        }
+
+        .sidebar-brand:hover .sidebar-brand-icon {
+            opacity: 0.9;
+        }
+
+        .sidebar-section-label {
+            font-family: var(--font);
+            font-size: 0.6rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 0.4rem;
+            opacity: 0.35;
+        }
+
+        .sidebar-text {
+            font-family: var(--font);
+            font-size: 0.82rem;
+            line-height: 1.5;
+            opacity: 0.55;
+        }
+
+        .source-card {
+            display: flex;
+            gap: 0.65rem;
+            border: 1px solid;
+            border-left: 3px solid;
+            border-radius: 0 var(--radius) var(--radius) 0;
+            padding: 0.7rem 0.9rem;
+            margin-bottom: 0.5rem;
+            box-shadow: var(--shadow);
+            transition: background 0.15s, border-color 0.15s;
+        }
+
+        .source-card:hover {
+            border-left-color: transparent; /* Se remueve la dependencia de var(--accent) al hacer hover */
+        }
+
+        .source-card-icon {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+            margin-top: 0.15rem;
+            opacity: 0.3;
+        }
+
+        .source-card-body {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .source-title {
+            font-family: var(--font);
+            font-size: 0.88rem;
+            font-weight: 500;
+            margin-bottom: 0.1rem;
+            line-height: 1.4;
+        }
+
+        .source-meta {
+            font-family: var(--font-mono);
+            font-size: 0.73rem;
+            opacity: 0.5;
+            line-height: 1.5;
+        }
+
+        .source-meta a {
+            text-decoration: none;
+        }
+
+        .source-meta a:hover {
+            text-decoration: underline;
+        }
+
+        div[data-testid="stChatMessageContent"] {
+            font-family: var(--font);
+            font-size: 0.92rem;
+            line-height: 1.65;
+        }
+
+        div[data-testid="stChatMessageContent"] p {
+            margin: 0.3rem 0;
+        }
+
+        .stMarkdown {
+            font-family: var(--font);
+        }
+
+        textarea, input {
+            font-family: var(--font) !important;
+        }
+
+        .stSlider label {
+            font-weight: 500;
+        }
     </style>
     """,
     unsafe_allow_html=True
@@ -448,14 +565,17 @@ def render_source_card(source):
     pages = pages_to_text(source.get("pages", []))
 
     cgspace_link = f'<a href="{item_url}" target="_blank">CGSpace</a>' if item_url else "CGSpace"
-    pdf_link = f' &nbsp;|&nbsp; <a href="{pdf_url}" target="_blank">PDF</a>' if pdf_url else ""
+    pdf_link = f' <span class="meta-sep">|</span> <a href="{pdf_url}" target="_blank">PDF</a>' if pdf_url else ""
 
     st.markdown(
         f"""
         <div class="source-card">
-            <div class="source-title">[{source['id']}] {title}</div>
-            <div class="source-meta">
-                Pages: {pages}. {cgspace_link}.{pdf_link}
+            <svg class="source-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            <div class="source-card-body">
+                <div class="source-title">[{source['id']}] {title}</div>
+                <div class="source-meta">
+                    Pages: {pages}. {cgspace_link}.{pdf_link}
+                </div>
             </div>
         </div>
         """,
@@ -466,29 +586,37 @@ def render_source_card(source):
 with st.sidebar:
     st.markdown(
         """
-        <div class="fake-logo">
-            <div class="fake-logo-left">CGIAR</div>
-            <div class="fake-logo-right">MULTIFUNCTIONAL<br>LANDSCAPES</div>
+        <div class="sidebar-header">
+            <div class="sidebar-brand">
+                <span class="sidebar-brand-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                </span>
+                <div>
+                    <div class="sidebar-title">MFL Research</div>
+                    <div class="sidebar-affil">CGIAR Science Program</div>
+                </div>
+            </div>
         </div>
-
-        <div class="sidebar-title">Research Assistant</div>
         """,
         unsafe_allow_html=True
     )
 
-    st.markdown("---")
+    st.markdown("<hr style='margin:0.75rem 0 1rem;opacity:0.15;'>", unsafe_allow_html=True)
 
     st.markdown(
         """
-        <div class="sidebar-text">
-        Select the number of document segments used to generate the answer.
+        <div class="sidebar-section-text-container">
+            <div class="sidebar-section-label">Settings</div>
+            <div class="sidebar-text">
+            Set the number of document segments to retrieve per query.
+            </div>
         </div>
         """,
         unsafe_allow_html=True
     )
 
     top_k_user = st.slider(
-        "Document segments",
+        "Document segments.",
         min_value=3,
         max_value=12,
         value=TOP_K_DEFAULT
@@ -498,14 +626,33 @@ with st.sidebar:
 st.markdown(
     """
     <div class="hero">
-        <div class="hero-label">CGIAR Science Program on Multifunctional Landscapes</div>
-        <h1>Research Assistant Agent</h1>
-        <h2>
+        <div class="hero-top">
+            <span class="hero-badge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="6"/></svg>
+                CGIAR · MFL
+            </span>
+            <span class="hero-status">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="10"><circle cx="12" cy="12" r="1"/></svg>
+                Active Agent
+            </span>
+        </div>
+        <h1 class="hero-title">Research Assistant</h1>
+        <p class="hero-desc">
         Explore program documents, reports, briefs, and evidence through questions grounded
-        in sources retrieved from the official program repository in CGSpace.
-        </h2>
-        <div class="hero-credit">
-        Source corpus: official CGSpace collection for the CGIAR Science Program on Multifunctional Landscapes.
+        in sources retrieved from the official CGIAR repository.
+        </p>
+        <hr style='margin:0.75rem 0 1rem;opacity:0.6;'>
+        <div class="hero-meta">
+            <span class="hero-meta-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                Source Corpus: Official CGSpace collection for the CGIAR Science Program on Multifunctional Landscapes.
+            </span>
+            <span class="meta-sep">·</span>
+            <span class="hero-meta-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                Gemini Flash Lite
+            </span>
+            <span class="meta-sep">·</span>
         </div>
     </div>
     """,
