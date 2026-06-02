@@ -532,7 +532,12 @@ for msg in st.session_state["messages"]:
                     render_source_card(source)
 
 
+
+user_question = st.chat_input("Ask a question about the MFL document collection...")
+
 top_k_user = TOP_K_DEFAULT
+
+st.markdown("<div style='height: 0.6rem;'></div>", unsafe_allow_html=True)
 
 with st.expander("Settings", expanded=False):
     top_k_user = st.slider(
@@ -541,9 +546,6 @@ with st.expander("Settings", expanded=False):
         max_value=12,
         value=TOP_K_DEFAULT
     )
-
-
-user_question = st.chat_input("Ask a question about the MFL document collection...")
 
 
 if user_question:
