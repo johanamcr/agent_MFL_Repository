@@ -533,20 +533,18 @@ for msg in st.session_state["messages"]:
 
 
 
-user_question = st.chat_input("Ask a question about the MFL document collection...")
-
 top_k_user = TOP_K_DEFAULT
 
-st.markdown("<div style='height: 0.6rem;'></div>", unsafe_allow_html=True)
-
-with st.expander("Settings", expanded=False):
+with st.popover("⚙️ Settings"):
     top_k_user = st.slider(
-        "Number of document segments retrieved per query",
+        "Document segments",
         min_value=3,
         max_value=12,
-        value=TOP_K_DEFAULT
+        value=TOP_K_DEFAULT,
+        help="Number of document segments retrieved before generating the answer."
     )
 
+user_question = st.chat_input("Ask a question about the MFL document collection...")
 
 if user_question:
     st.session_state["messages"].append({
