@@ -4,223 +4,218 @@ from pathlib import Path
 import os
 from collections import OrderedDict
 
-import pandas as pd
 import streamlit as st
 import chromadb
 from chromadb.config import Settings
-from chromadb.utils import embedding_functions
 from dotenv import load_dotenv
 from sentence_transformers import SentenceTransformer
 import google.generativeai as genai
 
 
+# =========================================================
+# Base configuration
+# =========================================================
 BASE_DIR = Path(__file__).resolve().parent
 INDEX_DIR = BASE_DIR / "data" / "index"
-CHUNKS_CSV = INDEX_DIR / "chunks.csv"
+ACTIVE_CHROMA_PATH_FILE = INDEX_DIR / "active_chroma_path.txt"
 
 COLLECTION_NAME = "cgspace_documents"
 EMBEDDING_MODEL = "all-MiniLM-L6-v2"
-EMBEDDING_MODEL_CHROMA = "sentence-transformers/all-MiniLM-L6-v2"
 MODEL_NAME = "models/gemini-flash-lite-latest"
 TOP_K_DEFAULT = 8
 
 
+# =========================================================
+# Page config
+# =========================================================
 st.set_page_config(
-    page_title="MFL Research Assistant",
+    page_title="Research Assistant Agent",
     page_icon="🌿",
     layout="wide"
 )
 
 
+# =========================================================
+# Styling
+# =========================================================
 st.markdown(
     """
     <style>
-        :root {
-            --radius: 8px;
-            --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-            --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-        }
+    .stApp {
+        background: #F7FAF8 !important;
+        color: #17231D !important;
+    }
 
-        .block-container {
-            max-width: 1180px;
-            padding-top: 2.8rem;
-            padding-bottom: 6rem;
-        }
+    [data-testid="stHeader"] {
+        background: #F7FAF8 !important;
+    }
 
-        [data-testid="stSidebar"] {
-            display: none;
-        }
+    .block-container {
+        max-width: 1050px;
+        padding-top: 2rem;
+        padding-bottom: 5rem;
+    }
 
-        .hero {
-            border: 1px solid rgba(128, 128, 128, 0.25);
-            border-radius: var(--radius);
-            padding: 1.6rem 1.8rem 1.35rem;
-            margin-bottom: 1rem;
-            box-shadow: 0 1px 8px rgba(0,0,0,0.08);
-        }
+    .hero {
+        background: linear-gradient(135deg, #003D2B 0%, #00543C 55%, #63C08A 100%);
+        border-radius: 18px;
+        padding: 2.2rem 2.4rem;
+        color: white;
+        margin-bottom: 1.6rem;
+        box-shadow: 0 12px 30px rgba(0, 61, 43, 0.13);
+    }
 
-        .hero-top {
-            display: flex;
-            align-items: center;
-            gap: 0.65rem;
-            margin-bottom: 0.8rem;
-        }
+    .hero-label {
+        font-size: 0.78rem;
+        letter-spacing: 0.08rem;
+        text-transform: uppercase;
+        opacity: 0.9;
+        font-weight: 700;
+        margin-bottom: 0.8rem;
+    }
 
-        .hero-badge {
-            font-family: var(--font-mono);
-            font-size: 0.72rem;
-            letter-spacing: 0.04em;
-            text-transform: uppercase;
-            opacity: 0.6;
-        }
+    .hero h1 {
+        font-size: 2.2rem;
+        margin: 0;
+        font-weight: 800;
+        line-height: 1.15;
+    }
 
-        .hero-status {
-            font-family: var(--font-mono);
-            font-size: 0.68rem;
-            padding: 0.15rem 0.5rem;
-            border-radius: 4px;
-            font-weight: 600;
-            color: #1F5E3B;
-            background-color: #E6F4EA;
-        }
+    .hero h2 {
+        font-size: 1.02rem;
+        margin-top: 1.2rem;
+        line-height: 1.5;
+        font-weight: 550;
+        max-width: 850px;
+        opacity: 0.96;
+    }
 
-        .hero-title {
-            font-family: var(--font);
-            font-size: clamp(2rem, 4vw, 3rem);
-            font-weight: 760;
-            letter-spacing: -0.035em;
-            margin: 0 0 0.85rem 0;
-            line-height: 1.12;
-        }
+    .hero-credit {
+        font-size: 0.84rem;
+        margin-top: 1.4rem;
+        padding-top: 1rem;
+        border-top: 1px solid rgba(255,255,255,0.24);
+        opacity: 0.9;
+    }
 
-        .hero-desc {
-            font-family: var(--font);
-            font-size: 1.02rem;
-            line-height: 1.55;
-            opacity: 0.78;
-            margin: 0;
-            max-width: 970px;
-        }
+    .note-box {
+        background: #FFFFFF;
+        border: 1px solid #DCEBE4;
+        border-radius: 14px;
+        padding: 1rem 1.1rem;
+        color: #31483B;
+        font-size: 0.93rem;
+        margin-bottom: 1.1rem;
+    }
 
-        .hero-meta {
-            margin-top: 1.1rem;
-            padding-top: 0.85rem;
-            border-top: 1px solid rgba(128, 128, 128, 0.25);
-            font-family: var(--font);
-            font-size: 0.78rem;
-            opacity: 0.58;
-        }
+    [data-testid="stSidebar"] {
+        background: #EFF8F2 !important;
+        color: #17231D !important;
+    }
 
-        .source-card {
-            display: flex;
-            gap: 0.65rem;
-            border: 1px solid rgba(128, 128, 128, 0.22);
-            border-left: 3px solid #63C08A;
-            border-radius: 0 var(--radius) var(--radius) 0;
-            padding: 0.75rem 0.9rem;
-            margin-bottom: 0.55rem;
-            box-shadow: 0 1px 5px rgba(0,0,0,0.05);
-        }
+    .sidebar-title {
+        color: #003D2B;
+        font-size: 1.2rem;
+        font-weight: 800;
+        margin-bottom: 1rem;
+    }
 
-        .source-card-icon {
-            width: 16px;
-            height: 16px;
-            flex-shrink: 0;
-            margin-top: 0.15rem;
-            opacity: 0.35;
-        }
+    .sidebar-text {
+        color: #30483B;
+        font-size: 0.9rem;
+        line-height: 1.45;
+    }
 
-        .source-card-body {
-            flex: 1;
-            min-width: 0;
-        }
+    .fake-logo {
+        display: flex;
+        width: 100%;
+        border-radius: 3px;
+        overflow: hidden;
+        margin-bottom: 1.1rem;
+        border: 1px solid #DCEBE4;
+    }
 
-        .source-title {
-            font-family: var(--font);
-            font-size: 0.9rem;
-            font-weight: 600;
-            margin-bottom: 0.15rem;
-            line-height: 1.4;
-        }
+    .fake-logo-left {
+        background:#003D2B;
+        color:white;
+        font-weight:800;
+        font-size:1.45rem;
+        padding:1.05rem 0.8rem;
+        width:50%;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        letter-spacing:0.02rem;
+    }
 
-        .source-meta {
-            font-family: var(--font-mono);
-            font-size: 0.75rem;
-            opacity: 0.65;
-            line-height: 1.5;
-        }
+    .fake-logo-right {
+        background:#63C08A;
+        color:#003D2B;
+        font-weight:800;
+        font-size:0.82rem;
+        line-height:1.05;
+        padding:1rem 0.75rem;
+        width:50%;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        text-align:left;
+    }
 
-        .source-meta a {
-            color: #007A53 !important;
-            font-weight: 650;
-            text-decoration: none;
-        }
+    .source-card {
+        background-color: #FFFFFF;
+        border: 1px solid #DCEBE4;
+        border-left: 5px solid #63C08A;
+        border-radius: 12px;
+        padding: 0.95rem 1rem;
+        margin-bottom: 0.75rem;
+        color: #17231D;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.035);
+    }
 
-        .source-meta a:hover {
-            text-decoration: underline;
-        }
+    .source-title {
+        font-weight: 750;
+        color: #003D2B;
+        margin-bottom: 0.25rem;
+    }
 
-        div[data-testid="stChatMessageContent"] {
-            font-family: var(--font);
-            font-size: 0.94rem;
-            line-height: 1.65;
-        }
+    .source-meta {
+        font-size: 0.88rem;
+        color: #5B6B63;
+        margin-bottom: 0.35rem;
+    }
 
-        div[data-testid="stChatMessageContent"] p {
-            margin: 0.35rem 0;
-        }
+    .source-card a {
+        color: #00543C !important;
+        font-weight: 700;
+        text-decoration: none;
+    }
 
-        .stMarkdown {
-            font-family: var(--font);
-        }
+    .source-card a:hover {
+        text-decoration: underline;
+    }
 
-        textarea, input {
-            font-family: var(--font) !important;
-        }
+    div[data-testid="stChatMessageContent"] {
+        color: #17231D !important;
+    }
 
-        .stSlider label {
-            font-weight: 500;
-        }
+    .stMarkdown {
+        color: #17231D !important;
+    }
 
-        div[data-testid="stChatInput"] {
-            max-width: 1180px;
-            margin: 0 auto;
-        }
-
-        div[data-testid="stExpander"] {
-            border-radius: var(--radius);
-            margin-top: 0.5rem;
-            margin-bottom: 0.8rem;
-        }
-
-        @media (prefers-color-scheme: dark) {
-            .hero {
-                background: rgba(255,255,255,0.03);
-                border: 1px solid rgba(255,255,255,0.12);
-                box-shadow: 0 1px 10px rgba(0,0,0,0.35);
-            }
-
-            .source-card {
-                background: rgba(255,255,255,0.03);
-                border-color: rgba(255,255,255,0.12);
-                border-left-color: #63C08A;
-            }
-
-            .source-meta a {
-                color: #7BE0A3 !important;
-            }
-
-            .hero-status {
-                color: #9BE7B5;
-                background-color: rgba(99, 192, 138, 0.18);
-            }
-        }
+    textarea, input {
+        background-color: #FFFFFF !important;
+        color: #17231D !important;
+    }
     </style>
     """,
     unsafe_allow_html=True
 )
 
 
+# =========================================================
+# Environment and model loading
+# =========================================================
 load_dotenv(BASE_DIR / ".env")
 
 
@@ -234,9 +229,28 @@ def get_google_api_key():
     return key
 
 
+def load_chroma_path():
+    if ACTIVE_CHROMA_PATH_FILE.exists():
+        path = ACTIVE_CHROMA_PATH_FILE.read_text(encoding="utf-8").strip()
+        if path:
+            return path
+    return str(INDEX_DIR / "chroma")
+
+
 @st.cache_resource
 def load_embedding_model():
     return SentenceTransformer(EMBEDDING_MODEL)
+
+
+@st.cache_resource
+def load_chroma_collection():
+    chroma_path = load_chroma_path()
+    client = chromadb.PersistentClient(
+        path=chroma_path,
+        settings=Settings(anonymized_telemetry=False)
+    )
+    collection = client.get_collection(COLLECTION_NAME)
+    return collection
 
 
 @st.cache_resource
@@ -248,82 +262,9 @@ def load_gemini_model():
     return genai.GenerativeModel(MODEL_NAME)
 
 
-def clean_metadata_value(value):
-    if pd.isna(value):
-        return ""
-    return str(value)
-
-
-@st.cache_resource
-def load_chroma_collection():
-    chroma_path = str(INDEX_DIR / "chroma")
-
-    embedding_function = embedding_functions.SentenceTransformerEmbeddingFunction(
-        model_name=EMBEDDING_MODEL_CHROMA
-    )
-
-    client = chromadb.PersistentClient(
-        path=chroma_path,
-        settings=Settings(anonymized_telemetry=False)
-    )
-
-    existing = [c.name for c in client.list_collections()]
-
-    if COLLECTION_NAME in existing:
-        return client.get_collection(
-            name=COLLECTION_NAME,
-            embedding_function=embedding_function
-        )
-
-    if not CHUNKS_CSV.exists():
-        raise FileNotFoundError("data/index/chunks.csv was not found.")
-
-    collection = client.get_or_create_collection(
-        name=COLLECTION_NAME,
-        embedding_function=embedding_function
-    )
-
-    df = pd.read_csv(CHUNKS_CSV)
-
-    required_cols = [
-        "chunk_id", "chunk_text", "title", "document",
-        "page", "item_url", "pdf_url", "pdf_name"
-    ]
-
-    missing = [c for c in required_cols if c not in df.columns]
-    if missing:
-        raise ValueError(f"Missing columns in chunks.csv: {missing}")
-
-    df["chunk_text"] = df["chunk_text"].fillna("").astype(str)
-    df = df[df["chunk_text"].str.strip() != ""].copy()
-
-    ids, documents, metadatas = [], [], []
-
-    for _, row in df.iterrows():
-        ids.append(str(row["chunk_id"]))
-        documents.append(str(row["chunk_text"]))
-        metadatas.append({
-            "title": clean_metadata_value(row.get("title", "")),
-            "document": clean_metadata_value(row.get("document", "")),
-            "page": int(row.get("page", 0)),
-            "item_url": clean_metadata_value(row.get("item_url", "")),
-            "pdf_url": clean_metadata_value(row.get("pdf_url", "")),
-            "pdf_name": clean_metadata_value(row.get("pdf_name", "")),
-        })
-
-    batch_size = 100
-
-    for start in range(0, len(ids), batch_size):
-        end = min(start + batch_size, len(ids))
-        collection.add(
-            ids=ids[start:end],
-            documents=documents[start:end],
-            metadatas=metadatas[start:end],
-        )
-
-    return collection
-
-
+# =========================================================
+# RAG functions
+# =========================================================
 def retrieve_context(question: str, top_k: int):
     embedding_model = load_embedding_model()
     collection = load_chroma_collection()
@@ -434,10 +375,18 @@ Core rules:
 6. Do not include long document titles or URLs inside the main answer.
 7. Every substantive claim must be traceable to one of the retrieved sources.
 8. Do not cite sources that are not included in the retrieved context.
-9. Do not generate a "Sources used", "Fuentes utilizadas", bibliography, or references section in the answer.
-10. Source cards will be displayed separately in the interface.
-11. Keep the answer natural, concise, academic, and useful for research or program review.
-12. Do not force bullet points. Use paragraphs or bullets only when they help answer the question.
+9. In the "Sources used" section, group repeated evidence from the same document into one source entry.
+10. Use this source format:
+   [1] Title of the document. Pages: 5, 6. CGSpace.
+11. The word "CGSpace" should refer to the source URL provided in the retrieved context.
+12. Keep the answer concise, academic, and useful for research or program review.
+
+Write naturally in an academic and analytical style.
+Use structured paragraphs when useful, but do not force bullet points or rigid sections.
+Only include an evidence limitation if truly necessary.
+Do not generate a "Sources used" section in the answer.
+Source cards will be displayed separately in the interface.
+
 
 User question:
 {question}
@@ -453,7 +402,7 @@ def answer_question(question: str, top_k: int):
     llm = load_gemini_model()
 
     if llm is None:
-        raise ValueError("GOOGLE_API_KEY is not configured in Streamlit secrets.")
+        raise ValueError("GOOGLE_API_KEY is not configured in .env or Streamlit secrets.")
 
     chunks = retrieve_context(question, top_k=top_k)
     grouped_sources = group_sources(chunks)
@@ -471,23 +420,14 @@ def render_source_card(source):
     pages = pages_to_text(source.get("pages", []))
 
     cgspace_link = f'<a href="{item_url}" target="_blank">CGSpace</a>' if item_url else "CGSpace"
-    pdf_link = f' <span class="meta-sep">|</span> <a href="{pdf_url}" target="_blank">PDF</a>' if pdf_url else ""
+    pdf_link = f' &nbsp;|&nbsp; <a href="{pdf_url}" target="_blank">PDF</a>' if pdf_url else ""
 
     st.markdown(
         f"""
         <div class="source-card">
-            <svg class="source-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                 <polyline points="14 2 14 8 20 8"/>
-                 <line x1="16" y1="13" x2="8" y2="13"/>
-                 <line x1="16" y1="17" x2="8" y2="17"/>
-            </svg>
-            <div class="source-card-body">
-                <div class="source-title">[{source['id']}] {title}</div>
-                <div class="source-meta">
-                    Pages: {pages}. {cgspace_link}.{pdf_link}
-                </div>
+            <div class="source-title">[{source['id']}] {title}</div>
+            <div class="source-meta">
+                Pages: {pages}. {cgspace_link}.{pdf_link}
             </div>
         </div>
         """,
@@ -495,22 +435,55 @@ def render_source_card(source):
     )
 
 
+# =========================================================
+# Sidebar
+# =========================================================
+with st.sidebar:
+    st.markdown(
+        """
+        <div class="fake-logo">
+            <div class="fake-logo-left">CGIAR</div>
+            <div class="fake-logo-right">MULTIFUNCTIONAL<br>LANDSCAPES</div>
+        </div>
+
+        <div class="sidebar-title">Research Assistant</div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.markdown("---")
+
+    st.markdown(
+        """
+        <div class="sidebar-text">
+        Select the number of document segments used to generate the answer.
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    top_k_user = st.slider(
+        "Document segments",
+        min_value=3,
+        max_value=12,
+        value=TOP_K_DEFAULT
+    )
+
+
+# =========================================================
+# Main UI
+# =========================================================
 st.markdown(
     """
     <div class="hero">
-        <div class="hero-top">
-            <span class="hero-badge">CGIAR · MFL</span>
-            <span class="hero-status">Active Agent</span>
-        </div>
-        <h1 class="hero-title">MFL Research Assistant</h1>
-        <p class="hero-desc">
-        Explore the 328 PDF files in the official CGSpace collection of the CGIAR Scientific Program on
-        Multifunctional Landscapes. Ask a question or enter keywords; the assistant will search the
-        documents and generate a response.
-        </p>
-        <div class="hero-meta">
-            Source corpus: Official CGSpace collection for the CGIAR Science Program on Multifunctional Landscapes.
-            &nbsp;·&nbsp; Gemini Flash Lite
+        <div class="hero-label">CGIAR Science Program on Multifunctional Landscapes</div>
+        <h1>Research Assistant Agent</h1>
+        <h2>
+        Explore program documents, reports, briefs, and evidence through questions grounded
+        in sources retrieved from the official program repository in CGSpace.
+        </h2>
+        <div class="hero-credit">
+        Source corpus: official CGSpace collection for the CGIAR Science Program on Multifunctional Landscapes.
         </div>
     </div>
     """,
@@ -518,6 +491,10 @@ st.markdown(
 )
 
 
+
+# =========================================================
+# Chat state
+# =========================================================
 if "messages" not in st.session_state:
     st.session_state["messages"] = []
 
@@ -532,19 +509,8 @@ for msg in st.session_state["messages"]:
                     render_source_card(source)
 
 
-
-top_k_user = TOP_K_DEFAULT
-
-with st.popover("⚙️ Settings"):
-    top_k_user = st.slider(
-        "Document segments",
-        min_value=3,
-        max_value=12,
-        value=TOP_K_DEFAULT,
-        help="Number of document segments retrieved before generating the answer."
-    )
-
 user_question = st.chat_input("Ask a question about the MFL document collection...")
+
 
 if user_question:
     st.session_state["messages"].append({
@@ -556,7 +522,7 @@ if user_question:
         st.markdown(user_question)
 
     with st.chat_message("assistant"):
-        with st.spinner("Searching the CGSpace document collection and generating an answer..."):
+        with st.spinner("Retrieving evidence from CGSpace documents and generating answer..."):
             try:
                 answer, grouped_sources = answer_question(user_question, top_k=top_k_user)
 

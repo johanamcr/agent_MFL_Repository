@@ -6,9 +6,13 @@ __pycache__/
 data/pdfs/
 data/processed/
 data/logs/
-data/index/chroma/
-data/index/chroma_*/
-data/index/active_chroma_path.txt
+data/metadata/
 
 .DS_Store
-.vscode/
+data_rebuild/
+
+# MFL: despliegue y secretos
+.streamlit/secrets.toml
+.env.*
+!.env.example
+deploy_artifacts_private/
