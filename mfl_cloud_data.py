@@ -28,16 +28,29 @@ from typing import Optional
 REPO_ID = "jcastillor/mfl-agent-data"
 REPO_TYPE = "dataset"
 MANIFEST_NAME = "mfl_data_manifest.json"
-SNAPSHOT_ID = "mfl-2026-10-16-453"
+SNAPSHOT_ID = "mfl-2026-11-03-489"
+HF_REVISION = "mfl-v8-20261103"
 CATALOG_PATH = "data_rebuild/catalog/cgspace_catalog_enriched.jsonl"
 FRAMEWORK_RECORDS_PATH = "data_rebuild/private_results_framework/results_framework_records.jsonl"
-EXPECTED_FILE_COUNT = 20
+EXPECTED_FILE_COUNT = 30
 INDEXES = {
-    "data_rebuild/vectorstore_public_clean/": ("mfl_cgspace_public_clean_v2", 15952),
+    "data_rebuild/vectorstore_public_clean/": ("mfl_cgspace_public_clean_v2", 15988),
     "data_rebuild/vectorstore_framework_private/": ("mfl_results_framework_v1", 1174),
     "data_rebuild/vectorstore_tracker/": ("mfl_tracker_deliverables_v1", 1848),
 }
-ALLOWED_SINGLE_FILES = {CATALOG_PATH, FRAMEWORK_RECORDS_PATH}
+STRUCTURED_FILES = {
+    "data_rebuild/compare/all_aow_commitments.jsonl",
+    "data_rebuild/compare/all_aow_crosswalk_reviewed.jsonl",
+    "data_rebuild/compare/all_aow_tracker_inventory.jsonl",
+    "data_rebuild/compare/all_aow_activity_status.jsonl",
+    "data_rebuild/compare/mfl_country_filter.py",
+    "data_rebuild/compare/mfl_country_sources.py",
+    "data_rebuild/compare/mfl_country_prompt.py",
+    "data_rebuild/compare/mfl_center_filter.py",
+    "data_rebuild/compare/mfl_center_sources.py",
+    "data_rebuild/compare/mfl_center_prompt.py",
+}
+ALLOWED_SINGLE_FILES = {CATALOG_PATH, FRAMEWORK_RECORDS_PATH} | STRUCTURED_FILES
 APP_ROOT = Path(__file__).resolve().parent
 
 
@@ -65,8 +78,8 @@ def token_from_environment() -> Optional[str]:
 
 
 def validate_manifest(manifest: dict) -> list[dict]:
-    if manifest.get("bundle_id") != SNAPSHOT_ID or manifest.get("catalog_count") != 453:
-        raise ValueError("El manifiesto remoto no corresponde al snapshot de 453 outputs.")
+    if manifest.get("bundle_id") != SNAPSHOT_ID or manifest.get("catalog_count") != 489:
+        raise ValueError("El manifiesto remoto no corresponde al snapshot de 489 outputs.")
     items = manifest.get("files", [])
     if not isinstance(items, list) or len(items) != EXPECTED_FILE_COUNT:
         raise ValueError(f"Se esperaban {EXPECTED_FILE_COUNT} archivos en el manifiesto.")
@@ -133,9 +146,9 @@ def inspect_chroma_and_catalog(root: Path) -> None:
     with catalog.open(encoding="utf-8-sig") as f:
         records = [json.loads(line) for line in f if line.strip()]
     ids = [r.get("item_uuid") for r in records]
-    if len(ids) != 453 or len(set(ids)) != 453:
-        raise RuntimeError("Catálogo inválido: no contiene 453 UUID distintos.")
-    print("  CGSpace: 453 outputs — OK")
+    if len(ids) != 489 or len(set(ids)) != 489:
+        raise RuntimeError("Catálogo inválido: no contiene 489 UUID distintos.")
+    print("  CGSpace: 489 outputs — OK")
     framework = root.joinpath(*PurePosixPath(FRAMEWORK_RECORDS_PATH).parts)
     with framework.open(encoding="utf-8-sig") as f:
         framework_count = sum(bool(line.strip()) for line in f)
@@ -148,7 +161,7 @@ def fetch_manifest(token: str, root: Path) -> tuple[dict, list[dict], str]:
     from huggingface_hub import HfApi, hf_hub_download
 
     api = HfApi(token=token)
-    info = api.repo_info(repo_id=REPO_ID, repo_type=REPO_TYPE)
+    info = api.repo_info(repo_id=REPO_ID, repo_type=REPO_TYPE, revision=HF_REVISION)
     if info.private is not True:
         raise RuntimeError("ALTO: el dataset no está privado.")
     revision = info.sha  # fija todos los archivos a un mismo commit remoto
@@ -162,7 +175,7 @@ def fetch_manifest(token: str, root: Path) -> tuple[dict, list[dict], str]:
 
 
 def download_and_verify(root: Path, token: str) -> None:
-    """Descargar únicamente los 20 archivos aprobados y comprobarlos.
+    """Descargar únicamente los 30 archivos aprobados y comprobarlos.
 
     Apto para uso con st.cache_resource en Streamlit, antes de abrir Chroma.
     """
@@ -187,7 +200,7 @@ def download_and_verify(root: Path, token: str) -> None:
                 "Integridad SHA256 fallida o archivos incompletos. "
                 "No iniciar la aplicación con estos índices."
             )
-    print("Integridad SHA256 de los 20 archivos: OK")
+    print("Integridad SHA256 de los 30 archivos: OK")
     inspect_chroma_and_catalog(root)
 
 
@@ -227,8 +240,8 @@ def main() -> None:
         raise RuntimeError("Token de lectura vacío.")
     download_and_verify(root, token)
     print("\nRESULTADO FINAL")
-    print("20 archivos autenticados y SHA256 verificados")
-    print("CGSpace: 15952 vectores y 453 outputs")
+    print("30 archivos autenticados y SHA256 verificados")
+    print("CGSpace: 15988 vectores y 489 outputs")
     print("Results Framework: 1174 vectores y 796 registros")
     print("MFL Tracker: 1848 vectores")
     print("Descarga de prueba aislada — app.py y GitHub SIN CAMBIOS")
