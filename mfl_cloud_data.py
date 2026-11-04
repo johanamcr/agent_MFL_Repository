@@ -32,7 +32,7 @@ SNAPSHOT_ID = "mfl-2026-11-03-489"
 HF_REVISION = "mfl-v8-20261103"
 CATALOG_PATH = "data_rebuild/catalog/cgspace_catalog_enriched.jsonl"
 FRAMEWORK_RECORDS_PATH = "data_rebuild/private_results_framework/results_framework_records.jsonl"
-EXPECTED_FILE_COUNT = 30
+EXPECTED_FILE_COUNT = 33
 INDEXES = {
     "data_rebuild/vectorstore_public_clean/": ("mfl_cgspace_public_clean_v2", 15988),
     "data_rebuild/vectorstore_framework_private/": ("mfl_results_framework_v1", 1174),
@@ -43,6 +43,9 @@ STRUCTURED_FILES = {
     "data_rebuild/compare/all_aow_crosswalk_reviewed.jsonl",
     "data_rebuild/compare/all_aow_tracker_inventory.jsonl",
     "data_rebuild/compare/all_aow_activity_status.jsonl",
+    "data_rebuild/compare/aow4_commitments.jsonl",
+    "data_rebuild/compare/aow4_crosswalk_reviewed.jsonl",
+    "data_rebuild/compare/aow4_tracker_inventory.jsonl",
     "data_rebuild/compare/mfl_country_filter.py",
     "data_rebuild/compare/mfl_country_sources.py",
     "data_rebuild/compare/mfl_country_prompt.py",
@@ -175,7 +178,7 @@ def fetch_manifest(token: str, root: Path) -> tuple[dict, list[dict], str]:
 
 
 def download_and_verify(root: Path, token: str) -> None:
-    """Descargar únicamente los 30 archivos aprobados y comprobarlos.
+    """Descargar únicamente los 33 archivos aprobados y comprobarlos.
 
     Apto para uso con st.cache_resource en Streamlit, antes de abrir Chroma.
     """
@@ -200,7 +203,7 @@ def download_and_verify(root: Path, token: str) -> None:
                 "Integridad SHA256 fallida o archivos incompletos. "
                 "No iniciar la aplicación con estos índices."
             )
-    print("Integridad SHA256 de los 30 archivos: OK")
+    print("Integridad SHA256 de los 33 archivos: OK")
     inspect_chroma_and_catalog(root)
 
 
@@ -240,7 +243,7 @@ def main() -> None:
         raise RuntimeError("Token de lectura vacío.")
     download_and_verify(root, token)
     print("\nRESULTADO FINAL")
-    print("30 archivos autenticados y SHA256 verificados")
+    print("33 archivos autenticados y SHA256 verificados")
     print("CGSpace: 15988 vectores y 489 outputs")
     print("Results Framework: 1174 vectores y 796 registros")
     print("MFL Tracker: 1848 vectores")
