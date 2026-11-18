@@ -325,9 +325,9 @@ def load_public_catalog():
             uid = str(item.get("item_uuid") or "")
             if uid:
                 records[uid] = item
-    if len(records) < 489:
+    if len(records) < 517:
         raise ValueError(
-            f"El catalogo contiene {len(records)} outputs; se esperaban al menos 489."
+            f"El catalogo contiene {len(records)} outputs; se esperaban al menos 517."
         )
     return records
 
@@ -6027,7 +6027,7 @@ st.markdown(
         <p class="hero-desc">
         Explore {len(load_public_catalog())} outputs from official CGSpace collection of the CGIAR Scientific Program on Multifunctional Landscapes. Ask a question or enter keywords; the assistant will search the documents and generate a response.
         </p>
-        <div class="hero-update">Updated: 03 Nov 2026</div>
+        <div class="hero-update">Updated: 18 Nov 2026</div>
         <div class="hero-meta">
             Source corpus: Official CGSpace collection for the CGIAR Science Program on Multifunctional Landscapes
             &nbsp;·&nbsp; Gemini Flash Lite

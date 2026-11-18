@@ -28,13 +28,13 @@ from typing import Optional
 REPO_ID = "jcastillor/mfl-agent-data"
 REPO_TYPE = "dataset"
 MANIFEST_NAME = "mfl_data_manifest.json"
-SNAPSHOT_ID = "mfl-2026-11-03-489"
-HF_REVISION = "mfl-v8-20261103"
+SNAPSHOT_ID = "mfl-2026-11-18-517"
+HF_REVISION = "mfl-v8-20261118"
 CATALOG_PATH = "data_rebuild/catalog/cgspace_catalog_enriched.jsonl"
 FRAMEWORK_RECORDS_PATH = "data_rebuild/private_results_framework/results_framework_records.jsonl"
 EXPECTED_FILE_COUNT = 33
 INDEXES = {
-    "data_rebuild/vectorstore_public_clean/": ("mfl_cgspace_public_clean_v2", 15988),
+    "data_rebuild/vectorstore_public_clean/": ("mfl_cgspace_public_clean_v2", 16016),
     "data_rebuild/vectorstore_framework_private/": ("mfl_results_framework_v1", 1174),
     "data_rebuild/vectorstore_tracker/": ("mfl_tracker_deliverables_v1", 1848),
 }
@@ -81,8 +81,8 @@ def token_from_environment() -> Optional[str]:
 
 
 def validate_manifest(manifest: dict) -> list[dict]:
-    if manifest.get("bundle_id") != SNAPSHOT_ID or manifest.get("catalog_count") != 489:
-        raise ValueError("El manifiesto remoto no corresponde al snapshot de 489 outputs.")
+    if manifest.get("bundle_id") != SNAPSHOT_ID or manifest.get("catalog_count") != 517:
+        raise ValueError("El manifiesto remoto no corresponde al snapshot de 517 outputs.")
     items = manifest.get("files", [])
     if not isinstance(items, list) or len(items) != EXPECTED_FILE_COUNT:
         raise ValueError(f"Se esperaban {EXPECTED_FILE_COUNT} archivos en el manifiesto.")
@@ -149,9 +149,9 @@ def inspect_chroma_and_catalog(root: Path) -> None:
     with catalog.open(encoding="utf-8-sig") as f:
         records = [json.loads(line) for line in f if line.strip()]
     ids = [r.get("item_uuid") for r in records]
-    if len(ids) != 489 or len(set(ids)) != 489:
-        raise RuntimeError("Catálogo inválido: no contiene 489 UUID distintos.")
-    print("  CGSpace: 489 outputs — OK")
+    if len(ids) != 517 or len(set(ids)) != 517:
+        raise RuntimeError("Catálogo inválido: no contiene 517 UUID distintos.")
+    print("  CGSpace: 517 outputs — OK")
     framework = root.joinpath(*PurePosixPath(FRAMEWORK_RECORDS_PATH).parts)
     with framework.open(encoding="utf-8-sig") as f:
         framework_count = sum(bool(line.strip()) for line in f)
@@ -244,7 +244,7 @@ def main() -> None:
     download_and_verify(root, token)
     print("\nRESULTADO FINAL")
     print("33 archivos autenticados y SHA256 verificados")
-    print("CGSpace: 15988 vectores y 489 outputs")
+    print("CGSpace: 16016 vectores y 517 outputs")
     print("Results Framework: 1174 vectores y 796 registros")
     print("MFL Tracker: 1848 vectores")
     print("Descarga de prueba aislada — app.py y GitHub SIN CAMBIOS")
