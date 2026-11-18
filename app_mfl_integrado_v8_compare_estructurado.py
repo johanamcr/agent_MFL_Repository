@@ -4053,6 +4053,122 @@ Now answer the user's specific question.
 
 # SPECIFIC_AOW_DELIVERABLE_ROUTING_V1
 
+
+# COMPARE_INSTITUTIONAL_SCOPE_GUARD_V1
+def _compare_institutional_question_guidance(question, lang):
+    """Prevent unsupported institutional comparisons from using generic RAG."""
+    import re
+
+    q = str(question or "")
+    centers = _compare_question_center_mentions(q)
+
+    mentions_bioversity = bool(
+        re.search(r"\bBioversity\b", q, re.I)
+    )
+
+    if not centers and not mentions_bioversity:
+        return None
+
+    # Preserve the validated exact-deliverable route.
+    if _requested_specific_aow_deliverable(q) is not None:
+        return None
+
+    alliance = bool(re.search(
+        r"\bAlliance(?:\s+of)?\s+Bioversity"
+        r"(?:\s+International)?\s*(?:and|&|-)\s*CIAT\b"
+        r"|\bBioversity-CIAT\b",
+        q, re.I
+    ))
+
+    combined = bool(re.search(
+        r"\bCIAT\s*(?:and|y|&)\s*Bioversity\b"
+        r"|\bBioversity\s*(?:and|y|&)\s*CIAT\b",
+        q, re.I
+    ))
+
+    if combined or len(centers) > 1:
+        return _locale(
+            lang,
+            "La pregunta menciona varias instituciones. "
+            "Para evitar mezclar compromisos y entregables, "
+            "indica si deseas consultar CIAT y Bioversity "
+            "por separado o Alliance Bioversity-CIAT. "
+            "Ejemplos:\n\n"
+            "/compare What progress has CIAT made in AoW2 "
+            "OP 2.2.2 toward its 2026 commitments?\n\n"
+            "/compare What progress has Alliance "
+            "Bioversity-CIAT made in AoW2 OP 2.2.2 "
+            "toward its 2026 commitments?",
+            "Your question mentions multiple institutions. "
+            "To avoid mixing institutional commitments and "
+            "deliverables, please clarify whether you want "
+            "CIAT and Bioversity separately or Alliance "
+            "Bioversity-CIAT. Examples:\n\n"
+            "/compare What progress has CIAT made in AoW2 "
+            "OP 2.2.2 toward its 2026 commitments?\n\n"
+            "/compare What progress has Alliance "
+            "Bioversity-CIAT made in AoW2 OP 2.2.2 "
+            "toward its 2026 commitments?"
+        )
+
+    if mentions_bioversity and not alliance:
+        return _locale(
+            lang,
+            "Para comparar los resultados institucionales, "
+            "precisa si te refieres a Bioversity International "
+            "o a Alliance Bioversity-CIAT. No se deben "
+            "atribuir automaticamente los compromisos de "
+            "la Alianza a una institucion individual. "
+            "Incluye tambien el AoW y el OP, por ejemplo "
+            "AoW2 OP 2.2.2.",
+            "Please clarify whether you mean Bioversity "
+            "International or Alliance Bioversity-CIAT. "
+            "The Alliance's commitments should not be "
+            "automatically attributed to one institution. "
+            "Also specify the AoW and OP, for example "
+            "AoW2 OP 2.2.2."
+        )
+
+    aow = _requested_aow_id(q)
+    op = re.search(
+        r"\bOP\s*([1-5])\.\d+\.\d+\b",
+        q, re.I
+    )
+
+    if aow not in (1, 2, 3, 4, 5) or op is None:
+        return _locale(
+            lang,
+            "Para una comparacion institucional precisa, "
+            "incluye un Area of Work (AoW), un Output (OP) "
+            "y el centro de investigacion. Una pregunta "
+            "que solo menciona el centro y AoW no permite "
+            "utilizar la comparacion institucional "
+            "estructurada. Ejemplo:\n\n"
+            "/compare What progress has CIAT made in "
+            "AoW2 OP 2.2.2 toward its 2026 commitments?",
+            "For a precise institutional comparison, "
+            "specify an Area of Work (AoW), an Output (OP), "
+            "and one research center. A center-wide AoW "
+            "query cannot currently use the structured "
+            "institutional comparison. Example:\n\n"
+            "/compare What progress has CIAT made in "
+            "AoW2 OP 2.2.2 toward its 2026 commitments?"
+        )
+
+    if int(op.group(1)) != aow:
+        return _locale(
+            lang,
+            "El AoW y el OP indicados no coinciden. "
+            "Revisa ambos identificadores antes de "
+            "realizar la comparacion.",
+            "The requested AoW and OP do not match. "
+            "Please check both identifiers before "
+            "running the comparison."
+        )
+
+    return None
+
+
 def compare_sources(question, top_k):
     '''Find evidence from Tracker *for each* Excel commitment, then gate links.'''
 
@@ -5659,6 +5775,11 @@ def answer_question(question: str, top_k: int, previous_context=None):
         elif mode == "tracker":
             sources = retrieve_tracker_sources(search_question, top_k)
         else:  # /compare: explicit permission to cross-index
+            guidance = _compare_institutional_question_guidance(
+                search_question, lang
+            )
+            if guidance is not None:
+                return guidance, [], mode, None
             sources = compare_sources(search_question, top_k)
         if not sources:
             return _locale(lang,
