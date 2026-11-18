@@ -28,13 +28,18 @@ REQUIRED = [
     ROOT / "data_rebuild/compare/mfl_center_prompt.py"
 ]
 
-if all(path.is_file() for path in REQUIRED):
-    try:
-        inspect_chroma_and_catalog(ROOT)
-    except (OSError, RuntimeError, ValueError):
-        ensure_mfl_data()
-else:
+# MFL_BOOTSTRAP_VERIFIED_FIRST_V1
+# Verify/download the pinned snapshot BEFORE opening ChromaDB.
+# Cache initialization across Streamlit reruns for this snapshot.
+import streamlit as st
+from mfl_cloud_data import SNAPSHOT_ID
+
+@st.cache_resource(show_spinner=False)
+def _initialize_mfl_snapshot(snapshot_id):
     ensure_mfl_data()
+    return snapshot_id
+
+_initialize_mfl_snapshot(SNAPSHOT_ID)
 
 runpy.run_path(
     str(ROOT / "app_mfl_integrado_v8_compare_estructurado.py"),
